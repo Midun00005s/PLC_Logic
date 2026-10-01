@@ -1357,6 +1357,166 @@
   ],
   "submissions": [
     {
+      "id": "sub-1790837472955-73sy0",
+      "submittedAt": "2026-10-01T06:51:12.955Z",
+      "problemId": "prob-02",
+      "problemTitle": "Conveyor Belt Part Sorter & Batch Counter",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Conveyor Run Logic",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Part Counter (Preset 5)",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X1"
+              },
+              {
+                "type": "CTU",
+                "address": "C0",
+                "preset": 5
+              }
+            ]
+          },
+          {
+            "id": "rung-3",
+            "comment": "Batch Complete Divert & Buzzer",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "C0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          },
+          {
+            "id": "rung-4",
+            "comment": "Warning Buzzer on Complete",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "C0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2"
+              }
+            ]
+          },
+          {
+            "id": "rung-5",
+            "comment": "Counter Reset",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X2"
+              },
+              {
+                "type": "RESET",
+                "address": "C0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 2,
+      "totalTests": 3,
+      "scorePercent": 67,
+      "isAccepted": false,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 0,
+      "hiddenTotal": 1
+    },
+    {
+      "id": "sub-1790837358982-lj9ea",
+      "submittedAt": "2026-10-01T06:49:18.983Z",
+      "problemId": "prob-01",
+      "problemTitle": "Motor Start / Stop (3-Wire Seal-in)",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Motor Start/Stop with Auxiliary Contact Seal-in",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "NC",
+                "address": "X2"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Run Indicator Lamp",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "Y0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 6,
+      "totalTests": 6,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 3,
+      "publicTotal": 3,
+      "hiddenPassed": 3,
+      "hiddenTotal": 3
+    },
+    {
       "id": "sub-1790833694353-vzxnv",
       "submittedAt": "2026-10-01T05:48:14.353Z",
       "problemId": "prob-02",

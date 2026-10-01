@@ -72,25 +72,32 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
 
   const handleCreateNew = () => {
     setEditingProblem({
-      title: 'New Industrial Automation Problem',
+      title: 'Pump Station Automatic Level Control',
       difficulty: 'Easy',
       category: 'Process Automation',
-      tag: 'Custom Logic',
-      description: '### Industrial Problem Statement\nDescribe the industrial requirements and ladder logic specifications here...',
+      tag: 'Water Treatment',
+      description: `### Industrial Problem Statement\nImplement an automated pump station start/stop control with auxiliary contact latching (seal-in circuit).\n\n### Requirements:\n1. When **START PUSHBUTTON** (\`X0\`) is pressed (momentary), Pump Motor (\`Y0\`) must turn **ON**.\n2. When **START** (\`X0\`) is released, Pump Motor (\`Y0\`) must **remain ON** via auxiliary latching.\n3. When **STOP PUSHBUTTON** (\`X1\`) is pressed, Pump Motor (\`Y0\`) must turn **OFF**.\n\n### Standard Architecture Hint:\n- Rung 0: Branch with \`[NO X0]\` in parallel with \`[NO Y0]\`, followed by series \`[NC X1]\`, terminating in \`[COIL Y0]\`.`,
       inputs: [
-        { address: 'X0', name: 'START_PB', description: 'Start Pushbutton', type: 'momentary' },
-        { address: 'X1', name: 'STOP_PB', description: 'Stop Pushbutton', type: 'momentary' }
+        { address: 'X0', name: 'START_PB', description: 'Start Pushbutton (NO momentary)', type: 'momentary' },
+        { address: 'X1', name: 'STOP_PB', description: 'Stop Pushbutton (NC stop)', type: 'momentary' }
       ],
       outputs: [
-        { address: 'Y0', name: 'MOTOR', description: 'Motor Contactor', color: '#10b981' }
+        { address: 'Y0', name: 'PUMP_MOTOR', description: 'Main Pump Contactor', color: '#10b981' }
       ],
       starterLadder: {
         rungs: [
           {
             id: 'rung-1',
-            comment: 'Sample Rung',
+            comment: 'Pump Start/Stop with Auxiliary Contact Seal-In',
             elements: [
-              { type: 'NO', address: 'X0' },
+              {
+                type: 'BRANCH',
+                branches: [
+                  [{ type: 'NO', address: 'X0' }],
+                  [{ type: 'NO', address: 'Y0' }]
+                ]
+              },
+              { type: 'NC', address: 'X1' },
               { type: 'COIL', address: 'Y0' }
             ]
           }
@@ -98,17 +105,26 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
       },
       publicTests: [
         {
-          name: 'Test 1: Start Button Activates Motor',
+          name: 'Test 1: Start Button Turns Pump ON & Seals In',
           steps: [
-            { step: 1, inputs: { X0: true, X1: false }, expected: { Y0: true } }
+            { step: 1, description: 'Press Start PB', inputs: { X0: true, X1: false }, expected: { Y0: true } },
+            { step: 2, description: 'Release Start PB (Seal-in check)', inputs: { X0: false, X1: false }, expected: { Y0: true } }
+          ]
+        },
+        {
+          name: 'Test 2: Stop Button Turns Pump OFF',
+          steps: [
+            { step: 1, description: 'Start the pump', inputs: { X0: true, X1: false }, expected: { Y0: true } },
+            { step: 2, description: 'Press Stop PB', inputs: { X0: false, X1: true }, expected: { Y0: false } },
+            { step: 3, description: 'Release Stop PB', inputs: { X0: false, X1: false }, expected: { Y0: false } }
           ]
         }
       ],
       hiddenTests: [
         {
-          name: 'Hidden 1: Safety Stop Test',
+          name: 'Hidden 1: Safety Stop Priority (Both Pressed)',
           steps: [
-            { step: 1, inputs: { X0: false, X1: true }, expected: { Y0: false } }
+            { step: 1, description: 'Simultaneous Start and Stop pressed together', inputs: { X0: true, X1: true }, expected: { Y0: false } }
           ]
         }
       ]
@@ -464,11 +480,18 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                   <select
                     value={editingProblem.difficulty}
                     onChange={e => setEditingProblem({ ...editingProblem, difficulty: e.target.value })}
-                    style={{ width: '100%' }}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#0d121d',
+                      color: '#f8fafc',
+                      border: '1px solid #334155',
+                      padding: '8px 12px',
+                      borderRadius: '6px'
+                    }}
                   >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
+                    <option value="Easy" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Easy</option>
+                    <option value="Medium" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Medium</option>
+                    <option value="Hard" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Hard</option>
                   </select>
                 </div>
               </div>

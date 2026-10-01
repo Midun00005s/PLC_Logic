@@ -64,6 +64,17 @@ export default function LadderEditor({
     ...counterAddresses
   ];
 
+  const coilAddresses = [
+    ...outputAddresses,
+    ...memoryAddresses
+  ];
+
+  const resetAddresses = [
+    ...outputAddresses,
+    ...memoryAddresses,
+    ...counterAddresses
+  ];
+
   // Helper to get live state of an address
   const getAddressState = (addr) => {
     if (!plcState) return false;
@@ -227,6 +238,40 @@ export default function LadderEditor({
       ...branchEl.branches,
       [{ type: 'NO', address: inputAddresses[1]?.address || 'X1' }]
     ];
+    elements[elIdx] = branchEl;
+    rung.elements = elements;
+    newRungs[rIdx] = rung;
+    setLadder({ rungs: newRungs });
+  };
+
+  // Remove a path/leg from branch
+  const handleRemovePathFromBranch = (rIdx, elIdx, bIdx, e) => {
+    e.stopPropagation();
+    const newRungs = [...ladder.rungs];
+    const rung = { ...newRungs[rIdx] };
+    const elements = [...rung.elements];
+    const branchEl = { ...elements[elIdx] };
+    if (!branchEl.branches || branchEl.branches.length <= 1) return;
+    branchEl.branches = branchEl.branches.filter((_, idx) => idx !== bIdx);
+    elements[elIdx] = branchEl;
+    rung.elements = elements;
+    newRungs[rIdx] = rung;
+    setLadder({ rungs: newRungs });
+  };
+
+  // Add a series contact inside a branch leg
+  const handleAddContactToBranchLeg = (rIdx, elIdx, bIdx, e) => {
+    e.stopPropagation();
+    const newRungs = [...ladder.rungs];
+    const rung = { ...newRungs[rIdx] };
+    const elements = [...rung.elements];
+    const branchEl = { ...elements[elIdx] };
+    const branches = [...branchEl.branches];
+    branches[bIdx] = [
+      ...branches[bIdx],
+      { type: 'NO', address: inputAddresses[0]?.address || 'X0' }
+    ];
+    branchEl.branches = branches;
     elements[elIdx] = branchEl;
     rung.elements = elements;
     newRungs[rIdx] = rung;
@@ -508,14 +553,15 @@ export default function LadderEditor({
                                   <div style={{ display: 'flex', gap: '4px' }}>
                                     <button
                                       onClick={(e) => handleAddPathToBranch(rIdx, elIdx, e)}
-                                      style={{ color: '#38bdf8', fontSize: '10px' }}
+                                      style={{ color: '#38bdf8', fontSize: '10px', background: 'rgba(56, 189, 248, 0.1)', padding: '1px 6px', borderRadius: '3px' }}
                                       title="Add parallel branch leg"
                                     >
                                       + leg
                                     </button>
                                     <button
                                       onClick={(e) => handleDeleteElement(rIdx, elIdx, e)}
-                                      style={{ color: '#ef4444', fontSize: '10px' }}
+                                      style={{ color: '#ef4444', fontSize: '11px', padding: '0 4px' }}
+                                      title="Delete branch"
                                     >
                                       ×
                                     </button>
@@ -528,10 +574,11 @@ export default function LadderEditor({
                                     style={{
                                       display: 'flex',
                                       alignItems: 'center',
-                                      gap: '10px',
+                                      gap: '8px',
                                       padding: '4px 6px',
                                       borderLeft: '2px solid #3b82f6',
-                                      background: 'rgba(255, 255, 255, 0.02)'
+                                      background: 'rgba(255, 255, 255, 0.02)',
+                                      borderRadius: '0 4px 4px 0'
                                     }}
                                   >
                                     {branchElements.map((subEl, subIdx) => {
@@ -554,24 +601,63 @@ export default function LadderEditor({
                                           <select
                                             value={subEl.type}
                                             onChange={(e) => handleUpdateBranchElement(rIdx, elIdx, bIdx, subIdx, { type: e.target.value })}
-                                            style={{ padding: '2px 4px', fontSize: '11px', background: 'transparent' }}
+                                            style={{
+                                              padding: '3px 6px',
+                                              fontSize: '11px',
+                                              fontFamily: 'var(--font-mono)',
+                                              backgroundColor: '#0d121d',
+                                              color: '#f8fafc',
+                                              border: '1px solid #334155',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer'
+                                            }}
                                           >
-                                            <option value="NO">-[ ]- NO</option>
-                                            <option value="NC">-[/]- NC</option>
+                                            <option value="NO" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[ ]- NO</option>
+                                            <option value="NC" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[/]- NC</option>
                                           </select>
 
                                           <select
                                             value={subEl.address}
                                             onChange={(e) => handleUpdateBranchElement(rIdx, elIdx, bIdx, subIdx, { address: e.target.value })}
-                                            style={{ padding: '2px 4px', fontSize: '11px', fontWeight: 'bold', color: isConducting ? '#00ff88' : 'inherit' }}
+                                            style={{
+                                              padding: '3px 6px',
+                                              fontSize: '11px',
+                                              fontFamily: 'var(--font-mono)',
+                                              fontWeight: 'bold',
+                                              backgroundColor: '#0d121d',
+                                              color: isConducting ? '#00ff88' : '#f8fafc',
+                                              border: isConducting ? '1px solid #00ff88' : '1px solid #334155',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer'
+                                            }}
                                           >
                                             {allAddresses.map(addr => (
-                                              <option key={addr.address} value={addr.address}>{addr.name}</option>
+                                              <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                                {addr.name}
+                                              </option>
                                             ))}
                                           </select>
                                         </div>
                                       );
                                     })}
+
+                                    <button
+                                      onClick={(e) => handleAddContactToBranchLeg(rIdx, elIdx, bIdx, e)}
+                                      style={{ color: '#38bdf8', fontSize: '10px', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 5px', borderRadius: '3px' }}
+                                      title="Add series contact in this branch leg"
+                                    >
+                                      + contact
+                                    </button>
+
+                                    {el.branches.length > 1 && (
+                                      <button
+                                        onClick={(e) => handleRemovePathFromBranch(rIdx, elIdx, bIdx, e)}
+                                        style={{ color: '#94a3b8', fontSize: '11px', padding: '0 3px' }}
+                                        title="Remove this branch leg"
+                                      >
+                                        ×
+                                      </button>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -600,10 +686,19 @@ export default function LadderEditor({
                               <select
                                 value={el.type}
                                 onChange={(e) => handleUpdateElement(rIdx, elIdx, { type: e.target.value })}
-                                style={{ padding: '3px 6px', fontSize: '11px', background: 'transparent' }}
+                                style={{
+                                  padding: '3px 6px',
+                                  fontSize: '11px',
+                                  fontFamily: 'var(--font-mono)',
+                                  backgroundColor: '#0d121d',
+                                  color: '#f8fafc',
+                                  border: '1px solid #334155',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
                               >
-                                <option value="NO">-[ ]- NO</option>
-                                <option value="NC">-[/]- NC</option>
+                                <option value="NO" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[ ]- NO</option>
+                                <option value="NC" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[/]- NC</option>
                               </select>
 
                               <select
@@ -612,12 +707,19 @@ export default function LadderEditor({
                                 style={{
                                   padding: '3px 6px',
                                   fontSize: '11px',
+                                  fontFamily: 'var(--font-mono)',
                                   fontWeight: 'bold',
-                                  color: isConducting ? '#00ff88' : 'inherit'
+                                  backgroundColor: '#0d121d',
+                                  color: isConducting ? '#00ff88' : '#f8fafc',
+                                  border: isConducting ? '1px solid #00ff88' : '1px solid #334155',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
                                 }}
                               >
                                 {allAddresses.map(addr => (
-                                  <option key={addr.address} value={addr.address}>{addr.name}</option>
+                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                    {addr.name}
+                                  </option>
                                 ))}
                               </select>
 
@@ -658,28 +760,76 @@ export default function LadderEditor({
                             >
                               <select
                                 value={el.type}
-                                onChange={(e) => handleUpdateElement(rIdx, elIdx, { type: e.target.value })}
-                                style={{ padding: '3px 6px', fontSize: '11px', background: 'transparent' }}
+                                onChange={(e) => {
+                                  const newType = e.target.value;
+                                  const updates = { type: newType };
+                                  if (newType === 'TON') {
+                                    if (!el.address || !el.address.startsWith('T')) {
+                                      updates.address = timerAddresses[0]?.address || 'T0';
+                                    }
+                                    if (!el.preset) updates.preset = 3000;
+                                  } else if (newType === 'CTU') {
+                                    if (!el.address || !el.address.startsWith('C')) {
+                                      updates.address = counterAddresses[0]?.address || 'C0';
+                                    }
+                                    if (!el.preset) updates.preset = 5;
+                                  } else if (newType === 'RESET') {
+                                    if (!el.address || (!el.address.startsWith('Y') && !el.address.startsWith('M') && !el.address.startsWith('C'))) {
+                                      updates.address = outputAddresses[0]?.address || 'Y0';
+                                    }
+                                  } else {
+                                    // COIL or SET
+                                    if (!el.address || (!el.address.startsWith('Y') && !el.address.startsWith('M'))) {
+                                      updates.address = outputAddresses[0]?.address || 'Y0';
+                                    }
+                                  }
+                                  handleUpdateElement(rIdx, elIdx, updates);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#0d121d',
+                                  color: '#f8fafc',
+                                  border: '1px solid #334155',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
                               >
-                                <option value="COIL">-( )- COIL</option>
-                                <option value="SET">-(S)- SET</option>
-                                <option value="RESET">-(R)- RESET</option>
-                                <option value="TON">[TON] TIMER</option>
-                                <option value="CTU">[CTU] COUNTER</option>
+                                <option value="COIL" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-( )- COIL</option>
+                                <option value="SET" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-(S)- SET</option>
+                                <option value="RESET" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-(R)- RESET</option>
+                                <option value="TON" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>[TON] TIMER</option>
+                                <option value="CTU" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>[CTU] COUNTER</option>
                               </select>
 
                               <select
                                 value={el.address}
                                 onChange={(e) => handleUpdateElement(rIdx, elIdx, { address: e.target.value })}
                                 style={{
-                                  padding: '3px 6px',
+                                  padding: '4px 8px',
                                   fontSize: '11px',
+                                  fontFamily: 'var(--font-mono)',
                                   fontWeight: 'bold',
-                                  color: isOutputEnergized ? '#38bdf8' : 'inherit'
+                                  backgroundColor: '#0d121d',
+                                  color: isOutputEnergized ? '#38bdf8' : '#f8fafc',
+                                  border: isOutputEnergized ? '1px solid #38bdf8' : '1px solid #334155',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
                                 }}
                               >
-                                {(el.type === 'TON' ? timerAddresses : el.type === 'CTU' ? counterAddresses : outputAddresses).map(addr => (
-                                  <option key={addr.address} value={addr.address}>{addr.name}</option>
+                                {(el.type === 'TON' 
+                                  ? timerAddresses 
+                                  : el.type === 'CTU' 
+                                  ? counterAddresses 
+                                  : el.type === 'RESET' 
+                                  ? resetAddresses 
+                                  : coilAddresses
+                                ).map(addr => (
+                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                    {addr.name}
+                                  </option>
                                 ))}
                               </select>
 

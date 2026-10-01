@@ -246,8 +246,10 @@ export default function VirtualIOPanel({
                       <button
                         onMouseDown={() => handleMomentaryDown(inp.address)}
                         onMouseUp={() => handleMomentaryUp(inp.address)}
+                        onMouseLeave={() => handleMomentaryUp(inp.address)}
                         onTouchStart={() => handleMomentaryDown(inp.address)}
                         onTouchEnd={() => handleMomentaryUp(inp.address)}
+                        onBlur={() => handleMomentaryUp(inp.address)}
                         style={{
                           background: isPressed ? '#059669' : '#1e293b',
                           color: isPressed ? '#000' : '#f8fafc',
@@ -257,7 +259,8 @@ export default function VirtualIOPanel({
                           fontSize: '11.5px',
                           fontWeight: 'bold',
                           boxShadow: isPressed ? '0 0 10px rgba(0, 255, 136, 0.4)' : 'none',
-                          userSelect: 'none'
+                          userSelect: 'none',
+                          cursor: 'pointer'
                         }}
                         id={`btn-momentary-${inp.address}`}
                       >

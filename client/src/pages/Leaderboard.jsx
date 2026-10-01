@@ -73,7 +73,7 @@ export default function Leaderboard() {
           <thead>
             <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>
               <th style={{ padding: '14px 20px', width: '80px' }}>RANK</th>
-              <th style={{ padding: '14px 20px' }}>STUDENT / TEAM</th>
+              <th style={{ padding: '14px 20px' }}>STUDENT</th>
               <th style={{ padding: '14px 20px', width: '160px' }}>TITLE & BADGE</th>
               <th style={{ padding: '14px 20px', width: '120px', textAlign: 'center' }}>UNIQUE SOLVED</th>
               <th style={{ padding: '14px 20px', width: '120px', textAlign: 'right' }}>SCORE</th>

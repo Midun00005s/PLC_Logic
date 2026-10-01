@@ -67,7 +67,24 @@ export default function TestResultsPanel({
             <span>Test Bench & Output Verification</span>
           </div>
 
-          {(testData || submissionData) && (
+          {(testData?.error || submissionData?.error) ? (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '11.5px',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 'bold',
+              color: '#f87171',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <AlertTriangle size={13} />
+              <span>{testData?.error || submissionData?.error}</span>
+            </div>
+          ) : (testData || submissionData) && (
             <div style={{
               background: (isSubmissionMode ? submissionData.isAccepted : testData?.passed)
                 ? 'rgba(16, 185, 129, 0.15)'

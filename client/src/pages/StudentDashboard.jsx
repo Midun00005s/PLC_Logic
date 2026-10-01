@@ -389,10 +389,21 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <select
                 value={selectedCategory}
                 onChange={e => setSelectedCategory(e.target.value)}
-                style={{ fontSize: '12px', padding: '4px 8px', height: '34px' }}
+                style={{
+                  fontSize: '12px',
+                  padding: '4px 10px',
+                  height: '34px',
+                  backgroundColor: '#0d121d',
+                  color: '#f8fafc',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                    {cat}
+                  </option>
                 ))}
               </select>
             </div>
