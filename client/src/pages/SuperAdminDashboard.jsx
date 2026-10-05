@@ -217,14 +217,14 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
     <div style={{ flex: 1, padding: '32px 28px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
       {/* Super Admin Top Header */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(26, 16, 48, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%)',
-        border: '1px solid rgba(139, 92, 246, 0.35)',
+        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-card) 100%)',
+        border: '1px solid var(--border-muted)',
         borderRadius: 'var(--radius-xl)',
         padding: '30px',
         marginBottom: '28px',
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 10px 30px rgba(139, 92, 246, 0.15)'
+        boxShadow: 'var(--shadow-lg)'
       }}>
         <div style={{
           position: 'absolute',
@@ -232,7 +232,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
           top: '-50px',
           width: '260px',
           height: '260px',
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--bg-glow-2) 0%, transparent 70%)',
           pointerEvents: 'none'
         }} />
 
@@ -255,7 +255,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               SUPER ADMIN CONSOLE • IEC 61131-3 BENCHMARK CONTROL
             </div>
 
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', fontWeight: '800', color: '#f8fafc', marginBottom: '6px' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>
               Instructor & Master Administrator Dashboard
             </h1>
 
@@ -317,7 +317,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               <Users size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {stats.totalStudents || students.filter(s => s.role === 'student').length} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>students</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '4px' }}>
@@ -332,7 +332,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               <Cpu size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {problems.length} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>challenges</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#c084fc', marginTop: '4px' }}>
@@ -347,7 +347,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               <FileText size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {allSubmissions.length} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>runs</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#10b981', marginTop: '4px' }}>
@@ -482,16 +482,16 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                     onChange={e => setEditingProblem({ ...editingProblem, difficulty: e.target.value })}
                     style={{
                       width: '100%',
-                      backgroundColor: '#0d121d',
-                      color: '#f8fafc',
-                      border: '1px solid #334155',
+                      backgroundColor: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-muted)',
                       padding: '8px 12px',
                       borderRadius: '6px'
                     }}
                   >
-                    <option value="Easy" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Easy</option>
-                    <option value="Medium" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Medium</option>
-                    <option value="Hard" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>Hard</option>
+                    <option value="Easy" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>Easy</option>
+                    <option value="Medium" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>Medium</option>
+                    <option value="Hard" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>Hard</option>
                   </select>
                 </div>
               </div>
@@ -578,9 +578,9 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                 </thead>
                 <tbody>
                   {problems.map(prob => (
-                    <tr key={prob.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                    <tr key={prob.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 'bold', color: '#f8fafc' }}>{prob.title}</div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{prob.title}</div>
                         <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>{prob.id}</div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
@@ -673,7 +673,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               </thead>
               <tbody>
                 {filteredStudents.map(st => (
-                  <tr key={st.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <tr key={st.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
@@ -691,7 +691,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                           {st.name?.charAt(0) || 'U'}
                         </div>
                         <div>
-                          <div style={{ fontWeight: '600', color: '#f8fafc' }}>{st.name}</div>
+                          <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{st.name}</div>
                           <div style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>{st.id}</div>
                         </div>
                       </div>
@@ -782,7 +782,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               </thead>
               <tbody>
                 {allSubmissions.map((sub, idx) => (
-                  <tr key={sub.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <tr key={sub.id || idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 18px' }}>
                       {sub.isAccepted ? (
                         <span style={{
@@ -814,7 +814,7 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '12px 18px', fontWeight: '600', color: '#f8fafc' }}>
+                    <td style={{ padding: '12px 18px', fontWeight: '600', color: 'var(--text-primary)' }}>
                       {sub.userName || 'Student'}
                     </td>
                     <td style={{ padding: '12px 18px', color: 'var(--text-secondary)' }}>
@@ -856,11 +856,11 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Supported Instruction Types:</span>
-                <span style={{ fontFamily: 'var(--font-mono)', color: '#f8fafc' }}>NO, NC, COIL, TON, TOF, CTU, CTD</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>NO, NC, COIL, TON, TOF, CTU, CTD</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Resolution Order:</span>
-                <span style={{ fontFamily: 'var(--font-mono)', color: '#f8fafc' }}>Top-to-Bottom, Left-to-Right</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>Top-to-Bottom, Left-to-Right</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Edge-Case Test Injection:</span>

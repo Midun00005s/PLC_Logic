@@ -204,12 +204,14 @@ class DatabaseStore {
     } else {
       this.data.problems.push(problem);
     }
+    this.recalculateAllStats();
     this.save();
     return problem;
   }
 
   deleteProblem(id) {
     this.data.problems = this.data.problems.filter(p => p.id !== id);
+    this.recalculateAllStats();
     this.save();
   }
 
@@ -253,7 +255,6 @@ class DatabaseStore {
     // Check if this was the first time this problem was solved
     let isFirstSolve = false;
     if (currentProblemId && currentIsAccepted) {
-      // Find prior accepted submissions (excluding the very latest one we just unshifted)
       const priorAccepted = this.data.submissions.slice(1).find(s => 
         (s.userId === userId || s.userName === user.name) && 
         s.problemId === currentProblemId && 
@@ -262,30 +263,40 @@ class DatabaseStore {
       isFirstSolve = !priorAccepted;
     }
 
-    // Get all user submissions
+    // Active problem IDs currently in database
+    const activeProblemIds = new Set(this.data.problems.map(p => p.id));
     const userSubs = this.data.submissions.filter(s => s.userId === userId || s.userName === user.name);
 
     // Distinct unique problem IDs that have at least one accepted solution
-    const uniqueSolvedProblemIds = new Set(
+    const allUniqueSolvedProblemIds = new Set(
       userSubs.filter(s => s.isAccepted || s.scorePercent === 100).map(s => s.problemId)
     );
+    const activeSolvedProblemIds = new Set(
+      [...allUniqueSolvedProblemIds].filter(pId => activeProblemIds.has(pId))
+    );
 
-    // Solved count is strictly the count of UNIQUE solved problems
-    user.solvedCount = uniqueSolvedProblemIds.size;
+    // Capped strictly at total active problems so solvedCount never exceeds totalCount
+    const rawSolved = activeSolvedProblemIds.size > 0 ? activeSolvedProblemIds.size : allUniqueSolvedProblemIds.size;
+    user.solvedCount = Math.min(rawSolved, this.data.problems.length);
 
-    // Score is strictly 100 points per unique solved problem
     let calculatedScore = 0;
-    uniqueSolvedProblemIds.forEach(pId => {
-      const prob = this.getProblemById(pId);
-      if (prob?.difficulty === 'Hard') calculatedScore += 200;
-      else if (prob?.difficulty === 'Medium') calculatedScore += 150;
-      else calculatedScore += 100;
-    });
+    if (activeSolvedProblemIds.size > 0) {
+      activeSolvedProblemIds.forEach(pId => {
+        const prob = this.getProblemById(pId);
+        if (prob?.difficulty === 'Hard') calculatedScore += 200;
+        else if (prob?.difficulty === 'Medium') calculatedScore += 150;
+        else calculatedScore += 100;
+      });
+    } else if (user.solvedCount > 0) {
+      calculatedScore = user.solvedCount * 100;
+    }
     user.score = calculatedScore;
 
     // Only students are added to the leaderboard
     if (user.role === 'student' && user.solvedCount > 0) {
       this.updateLeaderboard(user);
+    } else {
+      this.removeFromLeaderboard(user.name);
     }
 
     this.save();
@@ -294,6 +305,7 @@ class DatabaseStore {
 
   // Recalculate all users and rebuild leaderboard purely from registered students
   recalculateAllStats() {
+    const activeProblemIds = new Set(this.data.problems.map(p => p.id));
     const studentUsers = (this.data.users || []).filter(u => 
       u.role === 'student' && 
       u.name.toLowerCase() !== 'admin' && 
@@ -302,32 +314,42 @@ class DatabaseStore {
 
     const newLeaderboard = [];
 
-    // Recalculate unique solves for all registered students
+    // Recalculate unique solves for all registered students against ACTIVE problems
     studentUsers.forEach(user => {
-      // Find unique solved problems
-      const userSubs = this.data.submissions.filter(s => s.userId === user.id || s.userName === user.name);
-      const uniqueSolvedProblemIds = new Set(
-        userSubs.filter(s => s.isAccepted || s.scorePercent === 100).map(s => s.problemId)
+      const userSubs = this.data.submissions.filter(s => 
+        (s.userId === user.id || s.userName === user.name)
       );
+      const allUniqueSolved = new Set(
+        userSubs.filter(s => (s.isAccepted || s.scorePercent === 100)).map(s => s.problemId)
+      );
+      const activeSolved = new Set([...allUniqueSolved].filter(pId => activeProblemIds.has(pId)));
 
-      user.solvedCount = uniqueSolvedProblemIds.size;
+      const rawSolved = activeSolved.size > 0 ? activeSolved.size : allUniqueSolved.size;
+      user.solvedCount = Math.min(rawSolved, this.data.problems.length);
+
       let calculatedScore = 0;
-      uniqueSolvedProblemIds.forEach(pId => {
-        const prob = this.getProblemById(pId);
-        if (prob?.difficulty === 'Hard') calculatedScore += 200;
-        else if (prob?.difficulty === 'Medium') calculatedScore += 150;
-        else calculatedScore += 100;
-      });
+      if (activeSolved.size > 0) {
+        activeSolved.forEach(pId => {
+          const prob = this.getProblemById(pId);
+          if (prob?.difficulty === 'Hard') calculatedScore += 200;
+          else if (prob?.difficulty === 'Medium') calculatedScore += 150;
+          else calculatedScore += 100;
+        });
+      } else if (user.solvedCount > 0) {
+        calculatedScore = user.solvedCount * 100;
+      }
       user.score = calculatedScore;
 
-      newLeaderboard.push({
-        id: user.id,
-        name: user.name,
-        score: user.score,
-        solved: user.solvedCount,
-        avatar: "🎓",
-        badge: user.score >= 300 ? "PLC Master" : (user.score > 0 ? "Active Solver" : "Student Competitor")
-      });
+      if (user.solvedCount > 0) {
+        newLeaderboard.push({
+          id: user.id,
+          name: user.name,
+          score: user.score,
+          solved: user.solvedCount,
+          avatar: "🎓",
+          badge: user.score >= 300 ? "PLC Master" : (user.score > 0 ? "Active Solver" : "Student Competitor")
+        });
+      }
     });
 
     // Reset admin user stats to 0 (administrators do not compete on student leaderboard)

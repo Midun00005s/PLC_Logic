@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import ThemeModal from './ThemeModal';
 import { 
   Zap, Cpu, Award, Shield, BookOpen, User, LogOut, 
-  LayoutDashboard, GraduationCap, Lock, LogIn, ArrowRight
+  LayoutDashboard, GraduationCap, Lock, LogIn, ArrowRight, Palette
 } from 'lucide-react';
 
 export default function Navbar({ activePage, setActivePage }) {
   const { user, logout, isAdmin, isStudent } = useAuth();
+  const { activeThemeObj } = useTheme();
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
   const handleBrandClick = () => {
     if (isAdmin) {
@@ -104,6 +108,45 @@ export default function Navbar({ activePage, setActivePage }) {
       </nav>
 
       <div className="header-actions">
+        {/* Quick Theme Switcher Button */}
+        <button
+          className="btn-secondary"
+          onClick={() => setIsThemeModalOpen(true)}
+          title={`Active Theme: ${activeThemeObj.name} (Click to switch)`}
+          id="btn-nav-theme-switcher"
+          style={{
+            padding: '5px 11px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '7px',
+            fontSize: '12px',
+            borderRadius: '20px',
+            background: 'var(--nav-item-bg, var(--bg-card))',
+            borderColor: 'var(--nav-border, var(--border-muted))',
+            cursor: 'pointer'
+          }}
+        >
+          <span 
+            style={{
+              width: '9px',
+              height: '9px',
+              borderRadius: '50%',
+              background: activeThemeObj.colors.accent,
+              boxShadow: `0 0 7px ${activeThemeObj.colors.accent}`
+            }}
+          />
+          <Palette size={13} color="var(--nav-icon-color, var(--plc-cyan))" />
+          <span style={{ 
+            fontFamily: 'var(--font-mono)', 
+            fontSize: '11px', 
+            fontWeight: '600',
+            letterSpacing: '0.3px',
+            color: 'var(--nav-text-primary, var(--text-primary))'
+          }}>
+            {activeThemeObj.name}
+          </span>
+        </button>
+
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* User Profile Badge */}
@@ -150,9 +193,9 @@ export default function Navbar({ activePage, setActivePage }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                borderColor: activePage === 'login' ? 'var(--plc-cyan)' : 'var(--border-muted)',
-                color: activePage === 'login' ? 'var(--plc-cyan)' : 'var(--text-primary)',
-                background: activePage === 'login' ? 'rgba(6, 182, 212, 0.08)' : 'var(--bg-card)'
+                borderColor: activePage === 'login' ? 'var(--nav-active-border, var(--plc-cyan))' : 'var(--nav-border, var(--border-muted))',
+                color: activePage === 'login' ? 'var(--nav-active-border, var(--plc-cyan))' : 'var(--nav-text-primary, var(--text-primary))',
+                background: activePage === 'login' ? 'var(--nav-item-bg-hover, rgba(255, 255, 255, 0.2))' : 'var(--nav-item-bg, var(--bg-card))'
               }}
             >
               <LogIn size={14} />
@@ -184,6 +227,12 @@ export default function Navbar({ activePage, setActivePage }) {
           </div>
         )}
       </div>
+
+      {/* Theme Customizer Modal */}
+      <ThemeModal 
+        isOpen={isThemeModalOpen} 
+        onClose={() => setIsThemeModalOpen(false)} 
+      />
     </header>
   );
 }

@@ -86,18 +86,8 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
       justifyContent: 'center',
       padding: '40px 20px',
       position: 'relative',
-      background: 'radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.07) 0%, transparent 50%), var(--bg-primary)'
+      background: 'transparent'
     }}>
-      {/* Decorative cyber grid backdrop */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-        pointerEvents: 'none',
-        opacity: 0.8
-      }} />
-
       <div style={{
         width: '100%',
         maxWidth: '480px',
@@ -110,7 +100,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             display: 'inline-flex',
             alignItems: 'center',
             gap: '10px',
-            background: 'rgba(13, 18, 29, 0.8)',
+            background: 'var(--bg-card)',
             border: '1px solid var(--border-muted)',
             padding: '6px 14px',
             borderRadius: '30px',
@@ -120,7 +110,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             <div className="brand-logo-badge" style={{ width: '24px', height: '24px', borderRadius: '6px' }}>
               <Zap size={14} fill="#000" />
             </div>
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px' }}>
+            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-primary)' }}>
               PLC LOGIC ARENA
             </span>
             <span style={{ fontSize: '10px', color: 'var(--plc-cyan)', fontFamily: 'var(--font-mono)', background: 'rgba(6,182,212,0.15)', padding: '2px 6px', borderRadius: '10px' }}>
@@ -134,7 +124,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             fontWeight: '800',
             letterSpacing: '-0.5px',
             marginBottom: '6px',
-            color: '#f8fafc'
+            color: 'var(--text-primary)'
           }}>
             {mode === 'login' ? 'Authentication Gateway' : 'Student Registration'}
           </h1>
@@ -147,11 +137,11 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
 
         {/* Auth Card */}
         <div style={{
-          background: 'rgba(13, 18, 29, 0.95)',
+          background: 'var(--bg-surface)',
           border: '1px solid var(--border-muted)',
           borderRadius: 'var(--radius-xl)',
           padding: '32px',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(6, 182, 212, 0.08)',
+          boxShadow: 'var(--shadow-lg)',
           backdropFilter: 'blur(20px)',
           position: 'relative'
         }}>
@@ -178,7 +168,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 justifyContent: 'center',
                 gap: '8px',
                 background: mode === 'login' ? 'var(--bg-card)' : 'transparent',
-                color: mode === 'login' ? '#fff' : 'var(--text-secondary)',
+                color: mode === 'login' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 boxShadow: mode === 'login' ? 'var(--shadow-sm)' : 'none',
                 border: mode === 'login' ? '1px solid var(--border-focus)' : '1px solid transparent'
               }}
@@ -202,7 +192,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 justifyContent: 'center',
                 gap: '8px',
                 background: mode === 'register' ? 'var(--bg-card)' : 'transparent',
-                color: mode === 'register' ? '#fff' : 'var(--text-secondary)',
+                color: mode === 'register' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 boxShadow: mode === 'register' ? 'var(--shadow-sm)' : 'none',
                 border: mode === 'register' ? '1px solid var(--border-focus)' : '1px solid transparent'
               }}

@@ -90,7 +90,7 @@ export default function Leaderboard() {
                 <tr
                   key={idx}
                   style={{
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                    borderBottom: '1px solid var(--border-subtle)',
                     background: isCurrentUser ? 'rgba(6, 182, 212, 0.1)' : 'transparent',
                     transition: 'background 0.15s ease'
                   }}
@@ -113,7 +113,7 @@ export default function Leaderboard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '18px' }}>{item.avatar || '⚡'}</span>
                       <div>
-                        <div style={{ fontWeight: 'bold', color: isCurrentUser ? 'var(--plc-cyan)' : '#f8fafc' }}>
+                        <div style={{ fontWeight: 'bold', color: isCurrentUser ? 'var(--plc-cyan)' : 'var(--text-primary)' }}>
                           {item.name} {isCurrentUser && <span style={{ fontSize: '11px', color: '#38bdf8' }}>(You)</span>}
                         </div>
                       </div>
@@ -123,7 +123,8 @@ export default function Leaderboard() {
                   <td style={{ padding: '14px 20px' }}>
                     <span style={{
                       fontSize: '11px',
-                      background: 'rgba(255, 255, 255, 0.06)',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-subtle)',
                       padding: '3px 8px',
                       borderRadius: '12px',
                       color: 'var(--text-secondary)',
@@ -133,7 +134,7 @@ export default function Leaderboard() {
                     </span>
                   </td>
 
-                  <td style={{ padding: '14px 20px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: '600' }}>
+                  <td style={{ padding: '14px 20px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--text-primary)' }}>
                     {item.solved}
                   </td>
 

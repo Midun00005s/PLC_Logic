@@ -229,7 +229,7 @@ export default function VirtualIOPanel({
                       <span className={`status-dot ${isPressed ? 'active' : 'inactive'}`} />
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isPressed ? '#00ff88' : '#f8fafc' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isPressed ? 'var(--live-wire)' : 'var(--text-primary)' }}>
                             {inp.address}
                           </span>
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -336,7 +336,7 @@ export default function VirtualIOPanel({
                       }} />
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isEnergized ? color : '#f8fafc' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isEnergized ? color : 'var(--text-primary)' }}>
                             {out.address}
                           </span>
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>

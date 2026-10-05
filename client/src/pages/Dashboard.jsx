@@ -220,12 +220,12 @@ export default function Dashboard({ onSelectProblem }) {
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '17px', fontWeight: '700', fontFamily: 'var(--font-heading)', marginBottom: '8px', color: '#f8fafc' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: '700', fontFamily: 'var(--font-heading)', marginBottom: '8px', color: 'var(--text-primary)' }}>
                   {prob.title}
                 </h3>
 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '11px', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)', padding: '2px 7px', borderRadius: '4px' }}>
+                  <span style={{ fontSize: '11px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '2px 7px', borderRadius: '4px' }}>
                     {prob.category}
                   </span>
                   {prob.tag && (
@@ -253,7 +253,7 @@ export default function Dashboard({ onSelectProblem }) {
                     Outputs: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{prob.outputsCount} DO</span>
                   </div>
                   <div style={{ color: 'var(--text-secondary)' }}>
-                    Public Tests: <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{prob.publicTestsCount} Cases</span>
+                    Public Tests: <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{prob.publicTestsCount} Cases</span>
                   </div>
                   <div style={{ color: 'var(--text-secondary)' }}>
                     Hidden Tests: <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Active</span>

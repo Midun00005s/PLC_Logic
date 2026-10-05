@@ -266,7 +266,7 @@ export default function TestResultsPanel({
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: step.passed ? '#f8fafc' : '#f87171' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: step.passed ? 'var(--text-primary)' : '#ef4444' }}>
                           Step {step.stepNumber}: {step.description}
                         </span>
                         <span style={{

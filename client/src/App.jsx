@@ -7,6 +7,8 @@ import Problem from './pages/Problem';
 import Leaderboard from './pages/Leaderboard';
 import Docs from './pages/Docs';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import BackgroundEffects from './components/BackgroundEffects';
 
 function MainApp() {
   const { user, isAdmin, isStudent } = useAuth();
@@ -65,6 +67,9 @@ function MainApp() {
 
   return (
     <div className="app-container">
+      {/* Dynamic Background Atmospheric Layer */}
+      <BackgroundEffects />
+
       <Navbar activePage={activePage} setActivePage={setActivePage} />
 
       <main className="main-content">
@@ -119,8 +124,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

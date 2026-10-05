@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   try {
+    db.load();
     const list = db.getLeaderboard();
     res.json(list);
   } catch (err) {

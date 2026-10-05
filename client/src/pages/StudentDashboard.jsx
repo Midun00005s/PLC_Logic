@@ -45,13 +45,14 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
     loadData();
   }, [user]);
 
-  // Compute solved problem IDs from submissions
+  // Compute solved problem IDs from submissions strictly against active problems
+  const activeProblemIdSet = new Set(problems.map(p => p.id));
   const solvedProblemIds = new Set(
-    submissions.filter(s => s.isAccepted).map(s => s.problemId)
+    submissions.filter(s => s.isAccepted && activeProblemIdSet.has(s.problemId)).map(s => s.problemId)
   );
 
   const attemptedProblemIds = new Set(
-    submissions.map(s => s.problemId)
+    submissions.filter(s => activeProblemIdSet.has(s.problemId)).map(s => s.problemId)
   );
 
   const categories = ['ALL', 'Latching Logic', 'Counters', 'Timers', 'Process Automation', 'Safety Systems'];
@@ -71,15 +72,15 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
   });
 
   const nextRecommended = problems.find(p => !solvedProblemIds.has(p.id)) || problems[0];
-  const totalSolved = solvedProblemIds.size;
   const totalCount = problems.length;
-  const progressPercent = totalCount > 0 ? Math.round((totalSolved / totalCount) * 100) : 0;
+  const totalSolved = Math.min(solvedProblemIds.size, totalCount);
+  const progressPercent = totalCount > 0 ? Math.min(100, Math.round((totalSolved / totalCount) * 100)) : 0;
 
   return (
     <div style={{ flex: 1, padding: '32px 28px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
       {/* Top Student Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(13, 27, 42, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%)',
+        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-card) 100%)',
         border: '1px solid var(--border-muted)',
         borderRadius: 'var(--radius-xl)',
         padding: '32px 30px',
@@ -95,7 +96,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
           top: '-40px',
           width: '240px',
           height: '240px',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--bg-glow-1) 0%, transparent 70%)',
           pointerEvents: 'none'
         }} />
 
@@ -118,7 +119,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               STUDENT WORKSPACE • IEC 61131-3 VIRTUAL ARENA
             </div>
 
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '30px', fontWeight: '800', lineHeight: 1.2, marginBottom: '8px', color: '#f8fafc' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '30px', fontWeight: '800', lineHeight: 1.2, marginBottom: '8px', color: 'var(--text-primary)' }}>
               Welcome back, {user?.name || 'PLC Trainee'}! 👋
             </h1>
 
@@ -153,12 +154,13 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
 
           {/* Quick Progress Dial */}
           <div style={{
-            background: 'rgba(7, 9, 14, 0.6)',
-            border: '1px solid var(--border-muted)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)',
             padding: '20px 24px',
             minWidth: '220px',
-            textAlign: 'center'
+            textAlign: 'center',
+            boxShadow: 'var(--shadow-sm)'
           }}>
             <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
               Overall Progress
@@ -169,7 +171,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
             <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '6px', marginBottom: '10px' }}>
               {totalSolved} of {totalCount} Problems Solved
             </div>
-            <div style={{ width: '100%', height: '6px', background: 'var(--bg-card)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '6px', background: 'var(--bg-surface)', borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
               <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #06b6d4)', borderRadius: '3px', transition: 'width 0.5s ease' }} />
             </div>
           </div>
@@ -191,7 +193,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <Zap size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {user?.score || 0} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>PTS</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '4px' }}>
@@ -212,7 +214,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <CheckCircle2 size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {totalSolved} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ {totalCount}</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#34d399', marginTop: '4px' }}>
@@ -233,7 +235,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <FileText size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {submissions.length} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>runs</span>
           </div>
           <div style={{ fontSize: '11.5px', color: '#c084fc', marginTop: '4px' }}>
@@ -254,7 +256,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <Trophy size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: '#f8fafc' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             Leaderboard
           </div>
           <button
@@ -349,7 +351,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                     fontWeight: '600',
                     background: selectedStatus === st ? 'var(--bg-card)' : 'transparent',
                     border: selectedStatus === st ? '1px solid var(--border-focus)' : '1px solid transparent',
-                    color: selectedStatus === st ? '#fff' : 'var(--text-secondary)'
+                    color: selectedStatus === st ? 'var(--text-primary)' : 'var(--text-secondary)'
                   }}
                 >
                   {st}
@@ -373,7 +375,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                     fontWeight: '600',
                     background: selectedDifficulty === diff ? 'var(--bg-card)' : 'transparent',
                     border: selectedDifficulty === diff ? '1px solid var(--border-focus)' : '1px solid transparent',
-                    color: selectedDifficulty === diff ? '#fff' : 'var(--text-secondary)'
+                    color: selectedDifficulty === diff ? 'var(--text-primary)' : 'var(--text-secondary)'
                   }}
                 >
                   {diff}
@@ -393,15 +395,15 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                   fontSize: '12px',
                   padding: '4px 10px',
                   height: '34px',
-                  backgroundColor: '#0d121d',
-                  color: '#f8fafc',
-                  border: '1px solid #334155',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-muted)',
                   borderRadius: '6px',
                   cursor: 'pointer'
                 }}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                  <option key={cat} value={cat} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
                     {cat}
                   </option>
                 ))}
@@ -516,7 +518,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                         </span>
                       </div>
 
-                      <h3 style={{ fontSize: '17px', fontWeight: '700', fontFamily: 'var(--font-heading)', marginBottom: '8px', color: '#f8fafc' }}>
+                      <h3 style={{ fontSize: '17px', fontWeight: '700', fontFamily: 'var(--font-heading)', marginBottom: '8px', color: 'var(--text-primary)' }}>
                         {prob.title}
                       </h3>
 
@@ -549,7 +551,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                           Outputs: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{prob.outputsCount} DO</span>
                         </div>
                         <div style={{ color: 'var(--text-secondary)' }}>
-                          Public Tests: <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{prob.publicTestsCount} Cases</span>
+                          Public Tests: <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{prob.publicTestsCount} Cases</span>
                         </div>
                         <div style={{ color: 'var(--text-secondary)' }}>
                           Hidden Tests: <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Active</span>
@@ -595,7 +597,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               </thead>
               <tbody>
                 {submissions.map((sub, idx) => (
-                  <tr key={sub.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <tr key={sub.id || idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 18px' }}>
                       {sub.isAccepted ? (
                         <span style={{
@@ -627,7 +629,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '12px 18px', fontWeight: '600', color: '#f8fafc' }}>
+                    <td style={{ padding: '12px 18px', fontWeight: '600', color: 'var(--text-primary)' }}>
                       {sub.problemTitle || 'PLC Automation Challenge'}
                     </td>
                     <td style={{ padding: '12px 18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>

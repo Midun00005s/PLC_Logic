@@ -605,15 +605,15 @@ export default function LadderEditor({
                                               padding: '3px 6px',
                                               fontSize: '11px',
                                               fontFamily: 'var(--font-mono)',
-                                              backgroundColor: '#0d121d',
-                                              color: '#f8fafc',
-                                              border: '1px solid #334155',
+                                              backgroundColor: 'var(--bg-surface)',
+                                              color: 'var(--text-primary)',
+                                              border: '1px solid var(--border-muted)',
                                               borderRadius: '4px',
                                               cursor: 'pointer'
                                             }}
                                           >
-                                            <option value="NO" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[ ]- NO</option>
-                                            <option value="NC" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[/]- NC</option>
+                                            <option value="NO" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[ ]- NO</option>
+                                            <option value="NC" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[/]- NC</option>
                                           </select>
 
                                           <select
@@ -624,15 +624,15 @@ export default function LadderEditor({
                                               fontSize: '11px',
                                               fontFamily: 'var(--font-mono)',
                                               fontWeight: 'bold',
-                                              backgroundColor: '#0d121d',
-                                              color: isConducting ? '#00ff88' : '#f8fafc',
-                                              border: isConducting ? '1px solid #00ff88' : '1px solid #334155',
+                                              backgroundColor: 'var(--bg-surface)',
+                                              color: isConducting ? 'var(--live-wire)' : 'var(--text-primary)',
+                                              border: isConducting ? '1px solid var(--live-wire)' : '1px solid var(--border-muted)',
                                               borderRadius: '4px',
                                               cursor: 'pointer'
                                             }}
                                           >
                                             {allAddresses.map(addr => (
-                                              <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                              <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
                                                 {addr.name}
                                               </option>
                                             ))}
@@ -690,15 +690,15 @@ export default function LadderEditor({
                                   padding: '3px 6px',
                                   fontSize: '11px',
                                   fontFamily: 'var(--font-mono)',
-                                  backgroundColor: '#0d121d',
-                                  color: '#f8fafc',
-                                  border: '1px solid #334155',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: 'var(--text-primary)',
+                                  border: '1px solid var(--border-muted)',
                                   borderRadius: '4px',
                                   cursor: 'pointer'
                                 }}
                               >
-                                <option value="NO" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[ ]- NO</option>
-                                <option value="NC" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-[/]- NC</option>
+                                <option value="NO" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[ ]- NO</option>
+                                <option value="NC" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[/]- NC</option>
                               </select>
 
                               <select
@@ -709,15 +709,15 @@ export default function LadderEditor({
                                   fontSize: '11px',
                                   fontFamily: 'var(--font-mono)',
                                   fontWeight: 'bold',
-                                  backgroundColor: '#0d121d',
-                                  color: isConducting ? '#00ff88' : '#f8fafc',
-                                  border: isConducting ? '1px solid #00ff88' : '1px solid #334155',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: isConducting ? 'var(--live-wire)' : 'var(--text-primary)',
+                                  border: isConducting ? '1px solid var(--live-wire)' : '1px solid var(--border-muted)',
                                   borderRadius: '4px',
                                   cursor: 'pointer'
                                 }}
                               >
                                 {allAddresses.map(addr => (
-                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
                                     {addr.name}
                                   </option>
                                 ))}
@@ -790,18 +790,18 @@ export default function LadderEditor({
                                   fontSize: '11px',
                                   fontFamily: 'var(--font-mono)',
                                   fontWeight: 'bold',
-                                  backgroundColor: '#0d121d',
-                                  color: '#f8fafc',
-                                  border: '1px solid #334155',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: 'var(--text-primary)',
+                                  border: '1px solid var(--border-muted)',
                                   borderRadius: '4px',
                                   cursor: 'pointer'
                                 }}
                               >
-                                <option value="COIL" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-( )- COIL</option>
-                                <option value="SET" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-(S)- SET</option>
-                                <option value="RESET" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>-(R)- RESET</option>
-                                <option value="TON" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>[TON] TIMER</option>
-                                <option value="CTU" style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>[CTU] COUNTER</option>
+                                <option value="COIL" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-( )- COIL</option>
+                                <option value="SET" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-(S)- SET</option>
+                                <option value="RESET" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-(R)- RESET</option>
+                                <option value="TON" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>[TON] TIMER</option>
+                                <option value="CTU" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>[CTU] COUNTER</option>
                               </select>
 
                               <select
@@ -812,9 +812,9 @@ export default function LadderEditor({
                                   fontSize: '11px',
                                   fontFamily: 'var(--font-mono)',
                                   fontWeight: 'bold',
-                                  backgroundColor: '#0d121d',
-                                  color: isOutputEnergized ? '#38bdf8' : '#f8fafc',
-                                  border: isOutputEnergized ? '1px solid #38bdf8' : '1px solid #334155',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: isOutputEnergized ? 'var(--plc-cyan)' : 'var(--text-primary)',
+                                  border: isOutputEnergized ? '1px solid var(--plc-cyan)' : '1px solid var(--border-muted)',
                                   borderRadius: '4px',
                                   cursor: 'pointer'
                                 }}
@@ -827,7 +827,7 @@ export default function LadderEditor({
                                   ? resetAddresses 
                                   : coilAddresses
                                 ).map(addr => (
-                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: '#0d121d', color: '#f8fafc' }}>
+                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
                                     {addr.name}
                                   </option>
                                 ))}

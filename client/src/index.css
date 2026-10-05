@@ -1,6 +1,74 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
-:root {
+:root, [data-theme="white-brown"] {
+  --bg-primary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f8f5;
+  --bg-elevated: #ffffff;
+
+  --border-subtle: #eae5de;
+  --border-muted: #dcd3c7;
+  --border-focus: #b45309;
+
+  --text-primary: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+  --text-dim: #a8a29e;
+
+  /* Industrial Signal Colors */
+  --live-wire: #15803d;
+  --live-wire-glow: rgba(21, 128, 61, 0.35);
+  --live-wire-bright: #22c55e;
+  --dead-wire: #cbd5e1;
+  
+  --plc-run: #15803d;
+  --plc-stop: #b45309;
+  --plc-fault: #dc2626;
+  --plc-cyan: #b45309;
+  --plc-purple: #7c3aed;
+
+  --rail-power: #dc2626;
+  --rail-neutral: #b45309;
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 1px 3px rgba(60, 36, 21, 0.08);
+  --shadow-md: 0 4px 14px rgba(60, 36, 21, 0.09);
+  --shadow-lg: 0 12px 28px rgba(60, 36, 21, 0.12);
+  --shadow-glow: 0 0 14px rgba(217, 119, 6, 0.25);
+
+  /* Deep Brown Navigation Bar Colors */
+  --nav-bg: #3c2415;
+  --nav-border: #4d2f1c;
+  --nav-text-primary: #ffffff;
+  --nav-text-muted: #e7dfd8;
+  --nav-item-bg: rgba(255, 255, 255, 0.12);
+  --nav-item-bg-hover: rgba(255, 255, 255, 0.22);
+  --nav-active-border: #f59e0b;
+  --nav-brand-gradient: linear-gradient(to right, #ffffff, #fed7aa);
+  --nav-tag-bg: rgba(245, 158, 11, 0.2);
+  --nav-tag-color: #fde68a;
+  --nav-tag-border: rgba(245, 158, 11, 0.4);
+  --nav-logo-badge: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+
+  --modal-backdrop: rgba(30, 18, 10, 0.55);
+  --bg-grid-color: rgba(60, 36, 21, 0.05);
+  --bg-grid-major: rgba(180, 83, 9, 0.09);
+  --bg-glow-1: rgba(217, 119, 6, 0.05);
+  --bg-glow-2: rgba(180, 83, 9, 0.04);
+  --focus-ring: rgba(180, 83, 9, 0.25);
+}
+
+/* 1. Cyber Obsidian Theme */
+[data-theme="cyber-obsidian"] {
   --bg-primary: #07090e;
   --bg-surface: #0d121d;
   --bg-card: #131b2c;
@@ -44,6 +112,234 @@
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 16px rgba(0, 255, 136, 0.35);
+
+  --nav-bg: rgba(13, 18, 29, 0.88);
+  --nav-border: #1e293b;
+  --nav-text-primary: #f8fafc;
+  --nav-text-muted: #94a3b8;
+  --nav-item-bg: #131b2c;
+  --nav-item-bg-hover: #192339;
+  --nav-active-border: #06b6d4;
+  --nav-brand-gradient: linear-gradient(to right, #f8fafc, #94a3b8);
+  --nav-tag-bg: rgba(16, 185, 129, 0.15);
+  --nav-tag-color: #10b981;
+  --nav-tag-border: rgba(16, 185, 129, 0.3);
+  --nav-logo-badge: linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%);
+
+  --modal-backdrop: rgba(4, 7, 13, 0.85);
+  --bg-grid-color: rgba(255, 255, 255, 0.035);
+  --bg-grid-major: rgba(6, 182, 212, 0.08);
+  --bg-glow-1: rgba(6, 182, 212, 0.12);
+  --bg-glow-2: rgba(139, 92, 246, 0.09);
+  --focus-ring: rgba(6, 182, 212, 0.25);
+}
+
+/* 2. Blueprint CAD Theme (Engineering Schematics) */
+[data-theme="blueprint-cad"] {
+  --bg-primary: #06152b;
+  --bg-surface: #0a1f3d;
+  --bg-card: #0e2b52;
+  --bg-card-hover: #143868;
+  --bg-elevated: #1a447c;
+
+  --border-subtle: #163e70;
+  --border-muted: #21579c;
+  --border-focus: #38bdf8;
+
+  --text-primary: #f0f9ff;
+  --text-secondary: #93c5fd;
+  --text-muted: #60a5fa;
+  --text-dim: #3b82f6;
+
+  --live-wire: #38bdf8;
+  --live-wire-glow: rgba(56, 189, 248, 0.5);
+  --live-wire-bright: #7dd3fc;
+  --dead-wire: #1e3a5f;
+  
+  --plc-run: #38bdf8;
+  --plc-stop: #f59e0b;
+  --plc-fault: #f87171;
+  --plc-cyan: #38bdf8;
+  --plc-purple: #818cf8;
+
+  --rail-power: #f87171;
+  --rail-neutral: #38bdf8;
+
+  --nav-bg: rgba(10, 31, 61, 0.9);
+  --modal-backdrop: rgba(4, 15, 31, 0.88);
+  --bg-grid-color: rgba(56, 189, 248, 0.08);
+  --bg-grid-major: rgba(56, 189, 248, 0.16);
+  --bg-glow-1: rgba(56, 189, 248, 0.15);
+  --bg-glow-2: rgba(99, 102, 241, 0.11);
+  --focus-ring: rgba(56, 189, 248, 0.3);
+  --shadow-glow: 0 0 16px rgba(56, 189, 248, 0.35);
+}
+
+/* 3. Industrial SCADA (Factory Amber & Steel) */
+[data-theme="industrial-amber"] {
+  --bg-primary: #121316;
+  --bg-surface: #181a1f;
+  --bg-card: #20242c;
+  --bg-card-hover: #292d37;
+  --bg-elevated: #323743;
+
+  --border-subtle: #2d323e;
+  --border-muted: #42495b;
+  --border-focus: #f59e0b;
+
+  --text-primary: #fef3c7;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-dim: #6b7280;
+
+  --live-wire: #fbbf24;
+  --live-wire-glow: rgba(251, 191, 36, 0.5);
+  --live-wire-bright: #fde68a;
+  --dead-wire: #3f4452;
+  
+  --plc-run: #10b981;
+  --plc-stop: #f59e0b;
+  --plc-fault: #ef4444;
+  --plc-cyan: #f59e0b;
+  --plc-purple: #f97316;
+
+  --rail-power: #ef4444;
+  --rail-neutral: #f59e0b;
+
+  --nav-bg: rgba(24, 26, 31, 0.9);
+  --modal-backdrop: rgba(14, 15, 18, 0.88);
+  --bg-grid-color: rgba(245, 158, 11, 0.05);
+  --bg-grid-major: rgba(245, 158, 11, 0.1);
+  --bg-glow-1: rgba(245, 158, 11, 0.11);
+  --bg-glow-2: rgba(234, 88, 12, 0.08);
+  --focus-ring: rgba(245, 158, 11, 0.3);
+  --shadow-glow: 0 0 16px rgba(251, 191, 36, 0.35);
+}
+
+/* 4. Matrix Terminal (Phosphor CRT Green) */
+[data-theme="matrix-terminal"] {
+  --bg-primary: #030a05;
+  --bg-surface: #07140a;
+  --bg-card: #0b2011;
+  --bg-card-hover: #102e19;
+  --bg-elevated: #163d22;
+
+  --border-subtle: #12381b;
+  --border-muted: #1c5228;
+  --border-focus: #10b981;
+
+  --text-primary: #ecfdf5;
+  --text-secondary: #a7f3d0;
+  --text-muted: #6ee7b7;
+  --text-dim: #34d399;
+
+  --live-wire: #00ff66;
+  --live-wire-glow: rgba(0, 255, 102, 0.55);
+  --live-wire-bright: #4ade80;
+  --dead-wire: #1b4325;
+  
+  --plc-run: #00ff66;
+  --plc-stop: #f59e0b;
+  --plc-fault: #ef4444;
+  --plc-cyan: #10b981;
+  --plc-purple: #059669;
+
+  --rail-power: #ef4444;
+  --rail-neutral: #10b981;
+
+  --nav-bg: rgba(7, 20, 10, 0.9);
+  --modal-backdrop: rgba(2, 8, 3, 0.9);
+  --bg-grid-color: rgba(0, 255, 102, 0.07);
+  --bg-grid-major: rgba(0, 255, 102, 0.14);
+  --bg-glow-1: rgba(0, 255, 102, 0.13);
+  --bg-glow-2: rgba(16, 185, 129, 0.08);
+  --focus-ring: rgba(0, 255, 102, 0.3);
+  --shadow-glow: 0 0 16px rgba(0, 255, 102, 0.4);
+}
+
+/* 5. Synthwave Nebula (Cosmic Violet) */
+[data-theme="synthwave-nebula"] {
+  --bg-primary: #090614;
+  --bg-surface: #110d24;
+  --bg-card: #1a1435;
+  --bg-card-hover: #231b47;
+  --bg-elevated: #2e235d;
+
+  --border-subtle: #2a1f52;
+  --border-muted: #3f2f77;
+  --border-focus: #c084fc;
+
+  --text-primary: #faf5ff;
+  --text-secondary: #d8b4fe;
+  --text-muted: #a855f7;
+  --text-dim: #7e22ce;
+
+  --live-wire: #f43f5e;
+  --live-wire-glow: rgba(244, 63, 94, 0.5);
+  --live-wire-bright: #fb7185;
+  --dead-wire: #39285c;
+  
+  --plc-run: #10b981;
+  --plc-stop: #f59e0b;
+  --plc-fault: #f43f5e;
+  --plc-cyan: #c084fc;
+  --plc-purple: #f43f5e;
+
+  --rail-power: #f43f5e;
+  --rail-neutral: #8b5cf6;
+
+  --nav-bg: rgba(17, 13, 36, 0.9);
+  --modal-backdrop: rgba(7, 4, 16, 0.88);
+  --bg-grid-color: rgba(192, 132, 252, 0.06);
+  --bg-grid-major: rgba(244, 63, 94, 0.1);
+  --bg-glow-1: rgba(168, 85, 247, 0.14);
+  --bg-glow-2: rgba(244, 63, 94, 0.1);
+  --focus-ring: rgba(192, 132, 252, 0.3);
+  --shadow-glow: 0 0 16px rgba(168, 85, 247, 0.4);
+}
+
+/* 6. Cleanroom Studio (Modern Industrial Light) */
+[data-theme="cleanroom-light"] {
+  --bg-primary: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-elevated: #ffffff;
+
+  --border-subtle: #e2e8f0;
+  --border-muted: #cbd5e1;
+  --border-focus: #0284c7;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  --live-wire: #059669;
+  --live-wire-glow: rgba(5, 150, 105, 0.3);
+  --live-wire-bright: #10b981;
+  --dead-wire: #cbd5e1;
+  
+  --plc-run: #059669;
+  --plc-stop: #d97706;
+  --plc-fault: #dc2626;
+  --plc-cyan: #0284c7;
+  --plc-purple: #7c3aed;
+
+  --rail-power: #dc2626;
+  --rail-neutral: #0284c7;
+
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  --modal-backdrop: rgba(15, 23, 42, 0.45);
+  --bg-grid-color: rgba(15, 23, 42, 0.05);
+  --bg-grid-major: rgba(2, 132, 199, 0.08);
+  --bg-glow-1: rgba(2, 132, 199, 0.06);
+  --bg-glow-2: rgba(16, 185, 129, 0.05);
+  --focus-ring: rgba(2, 132, 199, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 14px rgba(2, 132, 199, 0.25);
 }
 
 * {
@@ -60,6 +356,7 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Scrollbars */
@@ -71,11 +368,11 @@ body {
   background: var(--bg-surface);
 }
 ::-webkit-scrollbar-thumb {
-  background: #27354f;
+  background: var(--border-muted);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3b4d70;
+  background: var(--border-focus);
 }
 
 /* Base Utility Classes */
@@ -95,29 +392,79 @@ button:disabled {
 input, select, textarea {
   font-family: inherit;
   border: 1px solid var(--border-muted);
-  background: #0d121d;
+  background: var(--bg-surface);
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 input:focus, select:focus, textarea:focus {
   border-color: var(--plc-cyan);
-  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 select {
-  background-color: #0d121d !important;
-  color: #f8fafc !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
   cursor: pointer;
 }
 
 select option {
-  background-color: #0d121d !important;
-  color: #f8fafc !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
   padding: 8px 12px;
+}
+
+/* Background Pattern Styles */
+.theme-pattern-grid.pattern-grid {
+  background-image: 
+    linear-gradient(to right, var(--bg-grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid-color) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.theme-pattern-grid.pattern-dots {
+  background-image: radial-gradient(circle, var(--bg-grid-color) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+.theme-pattern-grid.pattern-blueprint {
+  background-image: 
+    linear-gradient(to right, var(--bg-grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid-color) 1px, transparent 1px),
+    linear-gradient(to right, var(--bg-grid-major) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, var(--bg-grid-major) 1.5px, transparent 1.5px);
+  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+}
+
+.theme-pattern-grid.pattern-mesh {
+  background-image: 
+    repeating-linear-gradient(45deg, var(--bg-grid-color) 0, var(--bg-grid-color) 1px, transparent 0, transparent 24px),
+    repeating-linear-gradient(-45deg, var(--bg-grid-color) 0, var(--bg-grid-color) 1px, transparent 0, transparent 24px);
+}
+
+.theme-pattern-grid.pattern-clean {
+  background: none;
+}
+
+@keyframes orb-float-1 {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  50% { transform: translateX(-48%) translateY(25px) scale(1.08); }
+}
+
+@keyframes orb-float-2 {
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.12) translate(-20px, -20px); }
+}
+
+.orb-primary {
+  animation: orb-float-1 14s ease-in-out infinite;
+}
+
+.orb-secondary {
+  animation: orb-float-2 18s ease-in-out infinite alternate;
 }
 
 /* App Container */
@@ -125,14 +472,16 @@ select option {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 /* Header / Navbar */
 .app-header {
   height: 64px;
-  background: rgba(13, 18, 29, 0.9);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--nav-border, var(--border-subtle));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -140,6 +489,7 @@ select option {
   position: sticky;
   top: 0;
   z-index: 50;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .brand-section {
@@ -151,7 +501,7 @@ select option {
 }
 
 .brand-logo-badge {
-  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%);
+  background: var(--nav-logo-badge, linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%));
   color: #000;
   font-weight: 900;
   font-size: 18px;
@@ -169,7 +519,7 @@ select option {
   font-weight: 800;
   font-size: 19px;
   letter-spacing: -0.5px;
-  background: linear-gradient(to right, #f8fafc, #94a3b8);
+  background: var(--nav-brand-gradient, linear-gradient(to right, #f8fafc, #94a3b8));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -178,9 +528,9 @@ select option {
   font-family: var(--font-mono);
   font-size: 10px;
   text-transform: uppercase;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--nav-tag-bg, rgba(16, 185, 129, 0.15));
+  color: var(--nav-tag-color, #10b981);
+  border: 1px solid var(--nav-tag-border, rgba(16, 185, 129, 0.3));
   padding: 2px 7px;
   border-radius: 12px;
   display: flex;
@@ -197,7 +547,7 @@ select option {
 .nav-item {
   padding: 8px 14px;
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--nav-text-muted, var(--text-secondary));
   font-size: 13.5px;
   font-weight: 500;
   display: flex;
@@ -206,13 +556,15 @@ select option {
   transition: all 0.2s ease;
 }
 
-.nav-item:hover, .nav-item.active {
-  color: var(--text-primary);
-  background: var(--bg-card);
+.nav-item:hover {
+  color: var(--nav-text-primary, var(--text-primary));
+  background: var(--nav-item-bg-hover, var(--bg-card));
 }
 
 .nav-item.active {
-  border-bottom: 2px solid var(--plc-cyan);
+  color: var(--nav-text-primary, var(--text-primary));
+  background: var(--nav-item-bg, var(--bg-card));
+  border-bottom: 2px solid var(--nav-active-border, var(--plc-cyan));
 }
 
 /* User & Auth Badges */
@@ -226,10 +578,28 @@ select option {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-muted);
+  background: var(--nav-item-bg, var(--bg-card));
+  border: 1px solid var(--nav-border, var(--border-muted));
   padding: 5px 12px;
   border-radius: 20px;
+}
+
+.user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--nav-text-primary, var(--text-primary));
+}
+
+.app-header .btn-secondary {
+  background: var(--nav-item-bg, var(--bg-card));
+  border-color: var(--nav-border, var(--border-muted));
+  color: var(--nav-text-primary, var(--text-primary));
+}
+
+.app-header .btn-secondary:hover:not(:disabled) {
+  background: var(--nav-item-bg-hover, var(--bg-card-hover));
+  border-color: var(--nav-active-border, var(--border-focus));
 }
 
 .user-avatar {
@@ -370,7 +740,7 @@ select option {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 13, 0.85);
+  background: var(--modal-backdrop, rgba(4, 7, 13, 0.85));
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;

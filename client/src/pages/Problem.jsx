@@ -250,7 +250,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       {/* Top Workspace Header Bar */}
       <div style={{
         height: '52px',
-        background: '#0d121d',
+        background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
