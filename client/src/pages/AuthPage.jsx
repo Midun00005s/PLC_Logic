@@ -435,11 +435,6 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             </div>
           </form>
         </div>
-
-        {/* Footer info */}
-        <div style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-muted)', fontSize: '12px' }}>
-          <span>IEC 61131-3 Virtual Engine Standard • Problem Statement 07 Benchmark</span>
-        </div>
       </div>
     </div>
   );
