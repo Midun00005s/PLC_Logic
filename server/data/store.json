@@ -187,6 +187,57 @@
   ],
   "submissions": [
     {
+      "id": "sub-1791787518819-g36oj",
+      "submittedAt": "2026-10-12T06:45:18.820Z",
+      "problemId": "prob-1791188949918",
+      "problemTitle": "Pump Station Automatic Level Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Pump Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 3,
+      "totalTests": 3,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
+    {
       "id": "sub-1791735319035-58ilx",
       "submittedAt": "2026-10-11T16:15:19.036Z",
       "problemId": "prob-1791188949918",
