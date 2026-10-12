@@ -451,6 +451,109 @@ console.log('\n--- 14. Elevator Overload Protection & Direction Control (prob-17
   assert(plc.outputs.Y0 === false && plc.outputs.Y1 === false, 'Simultaneous UP and DOWN requests are both inhibited');
 }
 
+// 15. Save Progress & Resume Workspace Persistence, User Isolation, & Restoration
+console.log('\n--- 15. Workspace Autosave, User Isolation & Progress Restoration ---');
+{
+  const studentUser1 = 'usr-student-test-1';
+  const studentUser2 = 'usr-student-test-2';
+  const adminUser = 'usr-admin-test-1';
+  const testProblemId = 'prob-01';
+
+  // Ensure clean test state for test users
+  db.deleteWorkspace(studentUser1, testProblemId);
+  db.deleteWorkspace(studentUser2, testProblemId);
+  db.deleteWorkspace(adminUser, testProblemId);
+
+  // Initial state verification: Not Started
+  const initialStatus1 = db.resolveProblemStatus(studentUser1, testProblemId);
+  assert(initialStatus1 === 'Not Started', 'Problem starts with Not Started status before any edits');
+
+  // Verify workspace save with valid rungs
+  const customLadder1 = {
+    rungs: [
+      {
+        id: 'rung-test-1',
+        comment: 'Student 1 Custom Latch',
+        elements: [
+          { type: 'NO', address: 'X0' },
+          { type: 'NC', address: 'X1' },
+          { type: 'COIL', address: 'Y0' }
+        ]
+      }
+    ]
+  };
+
+  const saved1 = db.saveWorkspace(studentUser1, testProblemId, {
+    ladder: customLadder1,
+    testHistory: { lastRunType: 'PUBLIC_TESTS', passed: false, scorePercent: 66 },
+    plcState: { fault: 'NORMAL', scanCount: 42 }
+  });
+
+  assert(saved1 && saved1.ladder.rungs.length === 1, 'Successfully saved Student 1 workspace');
+  assert(saved1.ladder.rungs[0].comment === 'Student 1 Custom Latch', 'Preserved ladder rungs, comments, and instructions');
+  assert(saved1.testHistory.scorePercent === 66, 'Preserved testHistory in saved workspace');
+
+  // Status transitions to In Progress simply upon saving non-empty ladder
+  const statusAfterSave = db.resolveProblemStatus(studentUser1, testProblemId);
+  assert(statusAfterSave === 'In Progress', 'Saving edits transitions status to In Progress (NOT Solved)');
+
+  // Verify retrieval
+  const retrieved1 = db.getWorkspace(studentUser1, testProblemId);
+  assert(retrieved1 !== null, 'Retrieved saved workspace for Student 1');
+  assert(retrieved1.ladder.rungs[0].elements[1].type === 'NC', 'Restored exact NO/NC configuration');
+  assert(retrieved1.status === 'In Progress', 'Restored workspace includes current resolved status');
+
+  // User Isolation: Student 2 has separate empty workspace
+  const retrieved2 = db.getWorkspace(studentUser2, testProblemId);
+  assert(retrieved2 === null, 'User isolation: Student 2 cannot see Student 1 workspace');
+  assert(db.resolveProblemStatus(studentUser2, testProblemId) === 'Not Started', 'Student 2 status remains Not Started');
+
+  // Admin isolation: Admin has independent workspace for the same problem
+  const adminLadder = {
+    rungs: [
+      {
+        id: 'rung-admin-1',
+        comment: 'Admin Independent Reference Solution',
+        elements: [
+          { type: 'NO', address: 'X0' },
+          { type: 'COIL', address: 'Y0' }
+        ]
+      }
+    ]
+  };
+  db.saveWorkspace(adminUser, testProblemId, { ladder: adminLadder });
+  const adminRetrieved = db.getWorkspace(adminUser, testProblemId);
+  const studentRetrievedAgain = db.getWorkspace(studentUser1, testProblemId);
+
+  assert(adminRetrieved.ladder.rungs[0].comment === 'Admin Independent Reference Solution', 'Admin has independent workspace');
+  assert(studentRetrievedAgain.ladder.rungs[0].comment === 'Student 1 Custom Latch', 'Admin workspace did not overwrite student workspace');
+
+  // Validation rejection: rejects malformed ladder without rungs
+  let errorCaught = false;
+  try {
+    db.saveWorkspace(studentUser1, testProblemId, { ladder: { invalid: true } });
+  } catch (err) {
+    errorCaught = true;
+  }
+  assert(errorCaught === true, 'Database rejects malformed ladder without rungs array');
+
+  // Progress Summary verification
+  const summary = db.getUserProgressSummary(studentUser1);
+  assert(summary.userId === studentUser1, 'Summary matches requested user ID');
+  assert(summary.inProgressCount >= 1, 'Summary counts In Progress challenge correctly');
+  assert(Array.isArray(summary.activeUnfinished), 'Summary includes activeUnfinished shelf');
+  assert(summary.activeUnfinished.some(item => item.id === testProblemId), 'Unfinished challenge appears on Resume shelf');
+
+  // Reset/Delete workspace
+  const deleted = db.deleteWorkspace(studentUser1, testProblemId);
+  assert(deleted === true, 'Successfully deleted workspace on user reset');
+  const afterDelete = db.getWorkspace(studentUser1, testProblemId);
+  assert(afterDelete === null, 'Workspace is null after reset');
+
+  // Clean up admin test workspace
+  db.deleteWorkspace(adminUser, testProblemId);
+}
+
 console.log('\n============================================================');
 console.log(`✅ ALL ${passedTestsCount} / ${totalTestsCount} REGRESSION TESTS PASSED SUCCESSFULLY!`);
 console.log('============================================================\n');

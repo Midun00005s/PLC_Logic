@@ -63,6 +63,24 @@ router.post('/test', (req, res) => {
 
     const testResults = runTestSuite(ladder, testsToRun);
 
+    // If problemId and user is provided, update testHistory in workspace
+    const userId = req.body.userId || req.headers['x-user-id'];
+    if (userId && problemId) {
+      const ws = (db.data.workspaces || []).find(w => w.userId === userId && w.problemId === problemId);
+      if (ws) {
+        ws.testHistory = {
+          lastRunType: 'PUBLIC_TESTS',
+          passed: testResults.passed,
+          scorePercent: testResults.scorePercent,
+          passedTests: testResults.passedCount,
+          totalTests: testResults.totalTests,
+          testedAt: new Date().toISOString()
+        };
+        ws.lastActivity = ws.testHistory.testedAt;
+        db.save();
+      }
+    }
+
     res.json({
       success: true,
       ...testResults

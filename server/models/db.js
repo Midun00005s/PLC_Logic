@@ -45,7 +45,8 @@ class DatabaseStore {
       users: [...DEFAULT_USERS],
       problems: [...seedProblems],
       submissions: [],
-      leaderboard: [...DEFAULT_LEADERBOARD]
+      leaderboard: [...DEFAULT_LEADERBOARD],
+      workspaces: []
     };
     this.load();
   }
@@ -71,6 +72,7 @@ class DatabaseStore {
         this.data.problems = mergedProblems.length > 0 ? mergedProblems : seedProblems;
         this.data.submissions = parsed.submissions || [];
         this.data.leaderboard = parsed.leaderboard?.length ? parsed.leaderboard : DEFAULT_LEADERBOARD;
+        this.data.workspaces = Array.isArray(parsed.workspaces) ? parsed.workspaces : [];
       } else {
         this.save();
       }
@@ -264,6 +266,23 @@ class DatabaseStore {
       if (stats) {
         updatedUser = stats.user;
         isFirstSolve = stats.isFirstSolve;
+      }
+    }
+
+    // If a workspace exists for this user and problem, record test history
+    if (sub.userId && sub.userId !== 'anonymous') {
+      const ws = (this.data.workspaces || []).find(w => w.userId === sub.userId && w.problemId === sub.problemId);
+      if (ws) {
+        ws.testHistory = {
+          lastRunType: 'SUBMISSION',
+          isAccepted: sub.isAccepted,
+          scorePercent: sub.scorePercent,
+          passedTests: sub.passedTests,
+          totalTests: sub.totalTests,
+          submittedAt: sub.submittedAt
+        };
+        ws.status = sub.isAccepted ? 'Solved' : 'Attempted';
+        ws.lastActivity = sub.submittedAt;
       }
     }
 
@@ -470,6 +489,163 @@ class DatabaseStore {
         );
       })
       .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }
+
+  // Workspaces & User Progress Tracking
+  resolveProblemStatus(userId, problemId) {
+    if (!userId || !problemId) return 'Not Started';
+
+    // 1. Solved: has any accepted submission (isAccepted: true or scorePercent === 100)
+    const hasAccepted = (this.data.submissions || []).some(s => 
+      s.userId === userId && 
+      s.problemId === problemId && 
+      (s.isAccepted || s.scorePercent === 100)
+    );
+    if (hasAccepted) return 'Solved';
+
+    // 2. Attempted: has submitted verification tests before
+    const hasAttempted = (this.data.submissions || []).some(s => 
+      s.userId === userId && 
+      s.problemId === problemId
+    );
+    if (hasAttempted) return 'Attempted';
+
+    // 3. In Progress: workspace exists with saved rungs or modified edits
+    const ws = (this.data.workspaces || []).find(w => w.userId === userId && w.problemId === problemId);
+    if (ws && ws.ladder && Array.isArray(ws.ladder.rungs) && ws.ladder.rungs.length > 0) {
+      return 'In Progress';
+    }
+
+    return 'Not Started';
+  }
+
+  getWorkspace(userId, problemId) {
+    if (!userId || !problemId) return null;
+    const ws = (this.data.workspaces || []).find(w => w.userId === userId && w.problemId === problemId);
+    if (!ws) return null;
+    return {
+      ...ws,
+      status: this.resolveProblemStatus(userId, problemId)
+    };
+  }
+
+  saveWorkspace(userId, problemId, workspaceData) {
+    if (!userId || !problemId) {
+      throw new Error('userId and problemId are required to save workspace.');
+    }
+    const ladder = workspaceData?.ladder;
+    if (!ladder || !Array.isArray(ladder.rungs)) {
+      throw new Error('A valid ladder diagram containing an array of rungs is required.');
+    }
+
+    const now = new Date().toISOString();
+    let ws = (this.data.workspaces || []).find(w => w.userId === userId && w.problemId === problemId);
+
+    if (ws) {
+      ws.ladder = ladder;
+      ws.updatedAt = now;
+      ws.lastActivity = now;
+      if (workspaceData.testHistory !== undefined) {
+        ws.testHistory = workspaceData.testHistory;
+      }
+      if (workspaceData.plcState !== undefined) {
+        ws.plcState = workspaceData.plcState;
+      }
+    } else {
+      ws = {
+        id: `ws-${userId}-${problemId}`,
+        userId,
+        problemId,
+        ladder,
+        createdAt: now,
+        updatedAt: now,
+        lastActivity: now,
+        testHistory: workspaceData.testHistory || null,
+        plcState: workspaceData.plcState || null
+      };
+      if (!this.data.workspaces) this.data.workspaces = [];
+      this.data.workspaces.push(ws);
+    }
+
+    ws.status = this.resolveProblemStatus(userId, problemId);
+    this.save();
+    return ws;
+  }
+
+  deleteWorkspace(userId, problemId) {
+    if (!userId || !problemId) return false;
+    const initialLen = (this.data.workspaces || []).length;
+    this.data.workspaces = (this.data.workspaces || []).filter(w => !(w.userId === userId && w.problemId === problemId));
+    const changed = this.data.workspaces.length !== initialLen;
+    if (changed) this.save();
+    return changed;
+  }
+
+  getUserWorkspaces(userId) {
+    if (!userId) return [];
+    return (this.data.workspaces || [])
+      .filter(w => w.userId === userId)
+      .map(w => ({
+        ...w,
+        status: this.resolveProblemStatus(userId, w.problemId)
+      }));
+  }
+
+  getUserProgressSummary(userId) {
+    const user = this.findUserById(userId);
+    const activeProblems = this.data.problems || [];
+    const userWorkspaces = (this.data.workspaces || []).filter(w => w.userId === userId);
+    const wsMap = new Map();
+    userWorkspaces.forEach(w => wsMap.set(w.problemId, w));
+
+    let solvedCount = 0;
+    let attemptedCount = 0;
+    let inProgressCount = 0;
+    let notStartedCount = 0;
+
+    const problemProgressList = activeProblems.map(p => {
+      const status = this.resolveProblemStatus(userId, p.id);
+      const ws = wsMap.get(p.id);
+
+      if (status === 'Solved') solvedCount++;
+      else if (status === 'Attempted') attemptedCount++;
+      else if (status === 'In Progress') inProgressCount++;
+      else notStartedCount++;
+
+      return {
+        id: p.id,
+        title: p.title,
+        difficulty: p.difficulty,
+        category: p.category,
+        tag: p.tag,
+        status,
+        lastActivity: ws?.lastActivity || ws?.updatedAt || null,
+        hasSavedWorkspace: Boolean(ws && ws.ladder?.rungs?.length > 0),
+        rungsCount: ws?.ladder?.rungs?.length || p.starterLadder?.rungs?.length || 0,
+        testHistory: ws?.testHistory || null
+      };
+    });
+
+    // In-progress or attempted (active unfinished) problems sorted by most recently active
+    const activeUnfinished = problemProgressList
+      .filter(item => (item.status === 'In Progress' || item.status === 'Attempted') && item.hasSavedWorkspace)
+      .sort((a, b) => {
+        if (!a.lastActivity) return 1;
+        if (!b.lastActivity) return -1;
+        return new Date(b.lastActivity) - new Date(a.lastActivity);
+      });
+
+    return {
+      userId,
+      userName: user?.name || 'Trainee',
+      totalProblems: activeProblems.length,
+      solvedCount,
+      attemptedCount,
+      inProgressCount,
+      notStartedCount,
+      activeUnfinished,
+      problems: problemProgressList
+    };
   }
 }
 

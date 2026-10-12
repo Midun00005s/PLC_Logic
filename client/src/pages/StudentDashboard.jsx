@@ -3,18 +3,19 @@ import { useAuth } from '../context/AuthContext';
 import { 
   GraduationCap, Award, CheckCircle2, ChevronRight, Zap, 
   Cpu, Clock, Layers, Search, Filter, Play, ArrowUpRight, 
-  Trophy, BookOpen, AlertCircle, FileText
+  Trophy, BookOpen, AlertCircle, FileText, RotateCcw, Cloud
 } from 'lucide-react';
 
 export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, onOpenDocs }) {
   const { user } = useAuth();
   const [problems, setProblems] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [progressSummary, setProgressSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'SOLVED' | 'UNSOLVED'
+  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'IN PROGRESS' | 'SOLVED' | 'UNSOLVED'
   const [activeTab, setActiveTab] = useState('challenges'); // 'challenges' | 'history'
 
   useEffect(() => {
@@ -34,6 +35,26 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
           if (sRes.ok) {
             const sData = await sRes.json();
             setSubmissions(sData);
+          }
+
+          // Load progress summary & saved workspaces
+          try {
+            const token = localStorage.getItem('plc_token');
+            const headers = {};
+            if (token && token !== 'offline-token') {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            headers['x-user-id'] = user.id;
+
+            const wsRes = await fetch(`/api/workspaces/user/${user.id}`, { headers });
+            if (wsRes.ok) {
+              const wsData = await wsRes.json();
+              if (wsData.progress) {
+                setProgressSummary(wsData.progress);
+              }
+            }
+          } catch (wsErr) {
+            console.warn('Could not load workspaces summary:', wsErr);
           }
         }
       } catch (err) {
@@ -55,26 +76,45 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
     submissions.filter(s => activeProblemIdSet.has(s.problemId)).map(s => s.problemId)
   );
 
+  // Map progress statuses from progressSummary or fallback logic
+  const progressMap = new Map();
+  if (progressSummary?.problems) {
+    progressSummary.problems.forEach(p => progressMap.set(p.id, p));
+  }
+
+  const getProblemStatus = (probId) => {
+    if (progressMap.has(probId)) {
+      return progressMap.get(probId).status;
+    }
+    if (solvedProblemIds.has(probId)) return 'Solved';
+    if (attemptedProblemIds.has(probId)) return 'Attempted';
+    return 'Not Started';
+  };
+
   const categories = ['ALL', 'Latching Logic', 'Counters', 'Timers', 'Process Automation', 'Safety Systems'];
   const difficulties = ['ALL', 'Easy', 'Medium', 'Hard'];
 
   const filteredProblems = problems.filter(p => {
-    const isSolved = solvedProblemIds.has(p.id);
+    const status = getProblemStatus(p.id);
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesDiff = selectedDifficulty === 'ALL' || p.difficulty.toUpperCase() === selectedDifficulty.toUpperCase();
     const matchesCat = selectedCategory === 'ALL' || p.category === selectedCategory;
     const matchesStatus = selectedStatus === 'ALL' || 
-                          (selectedStatus === 'SOLVED' && isSolved) || 
-                          (selectedStatus === 'UNSOLVED' && !isSolved);
+                          (selectedStatus === 'SOLVED' && status === 'Solved') || 
+                          (selectedStatus === 'IN PROGRESS' && (status === 'In Progress' || status === 'Attempted')) ||
+                          (selectedStatus === 'UNSOLVED' && status !== 'Solved');
     return matchesSearch && matchesDiff && matchesCat && matchesStatus;
   });
 
-  const nextRecommended = problems.find(p => !solvedProblemIds.has(p.id)) || problems[0];
+  const nextRecommended = problems.find(p => getProblemStatus(p.id) !== 'Solved') || problems[0];
   const totalCount = problems.length;
-  const totalSolved = Math.min(solvedProblemIds.size, totalCount);
+  const totalSolved = progressSummary?.solvedCount !== undefined 
+    ? progressSummary.solvedCount 
+    : Math.min(solvedProblemIds.size, totalCount);
   const progressPercent = totalCount > 0 ? Math.min(100, Math.round((totalSolved / totalCount) * 100)) : 0;
+  const activeUnfinished = progressSummary?.activeUnfinished || [];
 
   return (
     <div style={{ flex: 1, padding: '32px 28px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
@@ -269,6 +309,99 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
         </div>
       </div>
 
+      {/* Active Unfinished Challenges (Resume Workspace Shelf) */}
+      {activeUnfinished.length > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '20px 24px',
+          marginBottom: '26px',
+          boxShadow: 'var(--shadow-md)'
+        }} id="resume-shelf-container">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                background: 'rgba(56, 189, 248, 0.18)',
+                color: '#38bdf8',
+                padding: '6px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <RotateCcw size={16} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', margin: 0 }}>
+                  Resume Your Saved Workspaces
+                </h3>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                  You have {activeUnfinished.length} in-progress ladder programs saved on your account. Pick up right where you left off.
+                </span>
+              </div>
+            </div>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+              AUTOSAVED TO DATABASE
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+            {activeUnfinished.map(item => (
+              <div
+                key={`resume-${item.id}`}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-muted)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{
+                      fontSize: '10px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: '700',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: item.status === 'Attempted' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                      color: item.status === 'Attempted' ? '#f59e0b' : '#38bdf8',
+                      border: item.status === 'Attempted' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(56, 189, 248, 0.3)'
+                    }}>
+                      {item.status.toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {item.rungsCount} {item.rungsCount === 1 ? 'rung' : 'rungs'}
+                    </span>
+                  </div>
+                  <h4 style={{ fontSize: '13.5px', fontWeight: '700', margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
+                    {item.title}
+                  </h4>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {item.lastActivity ? `Active: ${new Date(item.lastActivity).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Saved workspace'}
+                  </div>
+                </div>
+
+                <button
+                  className="btn-primary"
+                  onClick={() => onSelectProblem(item.id)}
+                  style={{ padding: '7px 12px', fontSize: '12px', width: '100%', justifyContent: 'center' }}
+                  id={`btn-resume-${item.id}`}
+                >
+                  <Play size={13} fill="currentColor" />
+                  <span>Continue Solving</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabs: Challenges vs Submissions History */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', marginBottom: '22px', gap: '8px' }}>
         <button
@@ -340,7 +473,7 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
               <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginRight: '4px' }}>
                 Status:
               </span>
-              {['ALL', 'UNSOLVED', 'SOLVED'].map(st => (
+              {['ALL', 'IN PROGRESS', 'SOLVED', 'UNSOLVED'].map(st => (
                 <button
                   key={st}
                   onClick={() => setSelectedStatus(st)}
@@ -436,8 +569,11 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '18px' }}>
               {filteredProblems.map((prob, idx) => {
-                const isSolved = solvedProblemIds.has(prob.id);
-                const isAttempted = attemptedProblemIds.has(prob.id);
+                const probStatus = getProblemStatus(prob.id);
+                const isSolved = probStatus === 'Solved';
+                const isInProgress = probStatus === 'In Progress';
+                const isAttempted = probStatus === 'Attempted';
+                const hasSaved = progressMap.get(prob.id)?.hasSavedWorkspace;
 
                 return (
                   <div
@@ -446,6 +582,8 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                       background: 'var(--bg-card)',
                       border: isSolved 
                         ? '1px solid rgba(16, 185, 129, 0.4)' 
+                        : (isInProgress || isAttempted)
+                        ? '1px solid rgba(56, 189, 248, 0.4)'
                         : '1px solid var(--border-muted)',
                       borderRadius: 'var(--radius-lg)',
                       padding: '20px 22px',
@@ -480,6 +618,21 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                             }}>
                               <CheckCircle2 size={12} /> SOLVED
                             </span>
+                          ) : isInProgress ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'rgba(56, 189, 248, 0.15)',
+                              color: '#38bdf8',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              border: '1px solid rgba(56, 189, 248, 0.3)'
+                            }}>
+                              <Cloud size={11} /> IN PROGRESS
+                            </span>
                           ) : isAttempted ? (
                             <span style={{
                               background: 'rgba(245, 158, 11, 0.15)',
@@ -490,17 +643,18 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                               borderRadius: '4px',
                               border: '1px solid rgba(245, 158, 11, 0.3)'
                             }}>
-                              IN PROGRESS
+                              ATTEMPTED
                             </span>
                           ) : (
                             <span style={{
-                              background: 'rgba(6, 182, 212, 0.1)',
-                              color: '#38bdf8',
+                              background: 'rgba(255, 255, 255, 0.06)',
+                              color: 'var(--text-secondary)',
                               fontSize: '11px',
                               padding: '2px 7px',
-                              borderRadius: '4px'
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-subtle)'
                             }}>
-                              NEW
+                              NOT STARTED
                             </span>
                           )}
                         </div>
@@ -565,7 +719,15 @@ export default function StudentDashboard({ onSelectProblem, onOpenLeaderboard, o
                       onClick={() => onSelectProblem(prob.id)}
                       id={`btn-student-solve-${prob.id}`}
                     >
-                      <span>{isSolved ? 'Review / Re-solve' : 'Construct Ladder Diagram'}</span>
+                      <span>
+                        {isSolved 
+                          ? 'Review / Re-solve' 
+                          : (hasSaved || isInProgress)
+                          ? 'Resume Solving'
+                          : isAttempted
+                          ? 'Continue Solving'
+                          : 'Construct Ladder Diagram'}
+                      </span>
                       <ChevronRight size={16} />
                     </button>
                   </div>

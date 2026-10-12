@@ -26,7 +26,11 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  Radio
+  Radio,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 
 function renderInlineFormatted(text) {
@@ -276,7 +280,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   };
 
   // Save / Restore & Validation State
-  const [savedToast, setSavedToast] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'error' | 'idle'
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState(null);
   const [hasSavedProgram, setHasSavedProgram] = useState(false);
   const [syntaxValidation, setSyntaxValidation] = useState({ valid: true, errors: [] });
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -293,42 +299,159 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   // Virtual PLC instance ref for continuous simulation
   const plcRef = useRef(new VirtualPLC());
 
-  // Check saved program existence
+  // Refs for tracking changes and debounce autosave
+  const isLoadedRef = useRef(false);
+  const lastSavedJsonRef = useRef('');
+  const autosaveTimerRef = useRef(null);
+  const ladderRef = useRef(ladder);
+  ladderRef.current = ladder;
+
+  // Helper to build headers with auth token and userId fallback
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('plc_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token && token !== 'offline-token') {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (user?.id) {
+      headers['x-user-id'] = user.id;
+    }
+    return headers;
+  };
+
+  // Check saved storage existence
   const checkSavedStorage = (id) => {
     try {
-      const saved = localStorage.getItem(`plc_program_${id}`);
-      setHasSavedProgram(Boolean(saved));
+      const uKey = user?.id ? `plc_workspace_${user.id}_${id}` : null;
+      const savedUser = uKey ? localStorage.getItem(uKey) : null;
+      const savedGeneric = localStorage.getItem(`plc_program_${id}`);
+      setHasSavedProgram(Boolean(savedUser || savedGeneric));
     } catch {
       setHasSavedProgram(false);
     }
   };
 
-  // Load problem details
+  // Save workspace to backend API + local fallback
+  const persistWorkspace = async (currentLadder, isManual = false) => {
+    if (!currentLadder || !Array.isArray(currentLadder.rungs) || !problemId) return;
+
+    // Check if ladder actually has content or differs from what was saved
+    const ladderJson = JSON.stringify(currentLadder);
+    if (!isManual && ladderJson === lastSavedJsonRef.current) {
+      return;
+    }
+
+    try {
+      setSaveStatus('saving');
+      setSaveErrorMessage(null);
+
+      // Save locally first as instant fallback
+      if (user?.id) {
+        localStorage.setItem(`plc_workspace_${user.id}_${problemId}`, ladderJson);
+      }
+      localStorage.setItem(`plc_program_${problemId}`, ladderJson);
+      setHasSavedProgram(true);
+
+      const res = await fetch(`/api/workspaces/problem/${problemId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ladder: currentLadder,
+          userId: user?.id,
+          userName: user?.name,
+          plcState: plcState ? {
+            fault: plcState.fault,
+            scanCount: plcState.scanCount
+          } : null
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with ${res.status}`);
+      }
+
+      lastSavedJsonRef.current = ladderJson;
+      setSaveStatus('saved');
+      setLastSavedTime(new Date());
+    } catch (err) {
+      console.warn('Autosave failed:', err);
+      setSaveStatus('error');
+      setSaveErrorMessage(err.message);
+    }
+  };
+
+  // Load problem specifications and restore latest saved workspace
   useEffect(() => {
-    async function fetchProblem() {
+    let isMounted = true;
+
+    async function fetchProblemAndWorkspace() {
       try {
         setLoading(true);
+        isLoadedRef.current = false;
+
+        // 1. Fetch problem specs
         const res = await fetch(`/api/problems/${problemId}`);
         if (!res.ok) throw new Error('Problem not found');
         const data = await res.json();
+        if (!isMounted) return;
         setProblem(data);
 
-        // Check for locally saved version first
-        const savedRaw = localStorage.getItem(`plc_program_${problemId}`);
-        if (savedRaw) {
-          try {
-            const parsedSaved = JSON.parse(savedRaw);
-            if (parsedSaved?.rungs?.length > 0) {
-              setLadder(parsedSaved);
-              setHasSavedProgram(true);
-            } else {
-              initStarter(data);
+        // 2. Fetch backend saved workspace for this user
+        let restoredLadder = null;
+        let restoredTestHistory = null;
+
+        try {
+          const wsRes = await fetch(`/api/workspaces/problem/${problemId}`, {
+            headers: getAuthHeaders()
+          });
+          if (wsRes.ok) {
+            const wsData = await wsRes.json();
+            if (wsData.workspace && wsData.workspace.ladder?.rungs?.length > 0) {
+              restoredLadder = wsData.workspace.ladder;
+              restoredTestHistory = wsData.workspace.testHistory || null;
             }
-          } catch {
-            initStarter(data);
           }
+        } catch (wsErr) {
+          console.warn('Could not load remote workspace, trying local cache', wsErr);
+        }
+
+        // 3. Fallback to localStorage if no remote workspace found
+        if (!restoredLadder) {
+          const uKey = user?.id ? `plc_workspace_${user.id}_${problemId}` : null;
+          const localSavedRaw = (uKey && localStorage.getItem(uKey)) || localStorage.getItem(`plc_program_${problemId}`);
+          if (localSavedRaw) {
+            try {
+              const parsed = JSON.parse(localSavedRaw);
+              if (parsed?.rungs?.length > 0) {
+                restoredLadder = parsed;
+              }
+            } catch {}
+          }
+        }
+
+        // 4. Apply restored ladder or starter code
+        if (restoredLadder) {
+          setLadder(restoredLadder);
+          lastSavedJsonRef.current = JSON.stringify(restoredLadder);
+          setHasSavedProgram(true);
+          setSaveStatus('saved');
+          setLastSavedTime(new Date());
         } else {
           initStarter(data);
+          setSaveStatus('idle');
+        }
+
+        // Restore test history if available
+        if (restoredTestHistory) {
+          setTestData({
+            passed: restoredTestHistory.passed || restoredTestHistory.isAccepted || false,
+            scorePercent: restoredTestHistory.scorePercent || 0,
+            passedCount: restoredTestHistory.passedTests || 0,
+            totalTests: restoredTestHistory.totalTests || (data.publicTests?.length || 0),
+            isRestoredHistory: true,
+            testedAt: restoredTestHistory.testedAt || restoredTestHistory.submittedAt
+          });
         }
 
         // Initialize inputs
@@ -338,18 +461,24 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
         });
         setInputs(initialInp);
         checkSavedStorage(problemId);
+
+        // Mark problem loaded so autosave can engage safely on subsequent edits
+        setTimeout(() => {
+          if (isMounted) isLoadedRef.current = true;
+        }, 300);
       } catch (err) {
-        setError(err.message);
+        if (isMounted) setError(err.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     function initStarter(data) {
+      let starter;
       if (data.starterLadder?.rungs?.length > 0) {
-        setLadder(JSON.parse(JSON.stringify(data.starterLadder)));
+        starter = JSON.parse(JSON.stringify(data.starterLadder));
       } else {
-        setLadder({
+        starter = {
           rungs: [
             {
               id: 'rung-1',
@@ -360,12 +489,51 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               ]
             }
           ]
-        });
+        };
       }
+      setLadder(starter);
+      lastSavedJsonRef.current = JSON.stringify(starter);
     }
 
-    fetchProblem();
-  }, [problemId]);
+    fetchProblemAndWorkspace();
+
+    return () => {
+      isMounted = false;
+      // On unmount/navigation, immediately flush any pending autosave
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      if (isLoadedRef.current && ladderRef.current) {
+        persistWorkspace(ladderRef.current, true).catch(() => {});
+      }
+    };
+  }, [problemId, user?.id]);
+
+  // Debounced Autosave (1500ms) triggered whenever the ladder logic changes
+  useEffect(() => {
+    if (!isLoadedRef.current || !problem) return;
+
+    const currentJson = JSON.stringify(ladder);
+    if (currentJson === lastSavedJsonRef.current) {
+      return;
+    }
+
+    setSaveStatus('saving');
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      persistWorkspace(ladder, false);
+    }, 1500);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [ladder, problem]);
 
   // Live syntax validation whenever ladder structure changes
   useEffect(() => {
@@ -437,42 +605,79 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     setFault('NORMAL');
   };
 
-  // Save current ladder to localStorage
-  const handleSaveProgram = () => {
-    try {
-      localStorage.setItem(`plc_program_${problem.id}`, JSON.stringify(ladder));
-      setHasSavedProgram(true);
-      setSavedToast('Program saved to browser storage');
-      setTimeout(() => setSavedToast(null), 3000);
-    } catch (err) {
-      alert('Could not save program: ' + err.message);
+  // Manual immediate save button handler
+  const handleSaveProgram = async () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
     }
+    await persistWorkspace(ladder, true);
   };
 
-  // Restore saved ladder from localStorage
-  const handleRestoreProgram = () => {
+  // Restore saved ladder from server or localStorage
+  const handleRestoreProgram = async () => {
     try {
-      const raw = localStorage.getItem(`plc_program_${problem.id}`);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.rungs) {
-          setLadder(parsed);
-          handleResetPlc();
-          setSavedToast('Restored saved program');
-          setTimeout(() => setSavedToast(null), 3000);
+      let restored = null;
+      // Try backend first
+      try {
+        const wsRes = await fetch(`/api/workspaces/problem/${problem.id}`, {
+          headers: getAuthHeaders()
+        });
+        if (wsRes.ok) {
+          const wsData = await wsRes.json();
+          if (wsData.workspace?.ladder?.rungs?.length > 0) {
+            restored = wsData.workspace.ladder;
+          }
         }
+      } catch {}
+
+      // Fallback to local
+      if (!restored) {
+        const uKey = user?.id ? `plc_workspace_${user.id}_${problem.id}` : null;
+        const raw = (uKey && localStorage.getItem(uKey)) || localStorage.getItem(`plc_program_${problem.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.rungs) restored = parsed;
+        }
+      }
+
+      if (restored) {
+        setLadder(restored);
+        lastSavedJsonRef.current = JSON.stringify(restored);
+        handleResetPlc();
+        setSaveStatus('saved');
+        setLastSavedTime(new Date());
       }
     } catch (err) {
       alert('Could not restore program: ' + err.message);
     }
   };
 
-  // Revert ladder to starter template
-  const handleRevertLadder = () => {
+  // Revert ladder to starter template and clear saved workspace
+  const handleRevertLadder = async () => {
     if (!problem?.starterLadder) return;
-    if (window.confirm('Reset ladder logic to original starter code? Any unsaved edits will be lost.')) {
-      setLadder(JSON.parse(JSON.stringify(problem.starterLadder)));
+    if (window.confirm('Reset ladder logic to original starter code? Any saved progress on this challenge will be reset.')) {
+      const starter = JSON.parse(JSON.stringify(problem.starterLadder));
+      setLadder(starter);
+      lastSavedJsonRef.current = JSON.stringify(starter);
       handleResetPlc();
+
+      // Clear local storage
+      if (user?.id) {
+        localStorage.removeItem(`plc_workspace_${user.id}_${problem.id}`);
+      }
+      localStorage.removeItem(`plc_program_${problem.id}`);
+      setHasSavedProgram(false);
+      setSaveStatus('idle');
+
+      // Clear server workspace
+      try {
+        await fetch(`/api/workspaces/problem/${problem.id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+      } catch (err) {
+        console.warn('Failed to delete workspace on server:', err);
+      }
     }
   };
 
@@ -483,10 +688,11 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       setIsBottomCollapsed(false);
       const res = await fetch('/api/simulation/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ladder,
-          problemId: problem.id
+          problemId: problem.id,
+          userId: user?.id
         })
       });
       const data = await res.json();
@@ -504,9 +710,12 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     try {
       setIsSubmitting(true);
       setIsBottomCollapsed(false);
+      // Ensure latest workspace is saved on submit
+      persistWorkspace(ladder, true).catch(() => {});
+
       const res = await fetch('/api/submissions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           problemId: problem.id,
           ladder,
@@ -606,11 +815,55 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               {problem.difficulty}
             </span>
 
-            {savedToast && (
-              <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                <Check size={12} /> {savedToast}
-              </span>
-            )}
+            {/* Live Autosave & Persistence Status Indicator */}
+            <div
+              id="autosave-status-indicator"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: '500',
+                background: saveStatus === 'saving'
+                  ? 'rgba(56, 189, 248, 0.12)'
+                  : saveStatus === 'error'
+                  ? 'rgba(239, 68, 68, 0.15)'
+                  : 'rgba(16, 185, 129, 0.12)',
+                color: saveStatus === 'saving'
+                  ? '#38bdf8'
+                  : saveStatus === 'error'
+                  ? '#ef4444'
+                  : '#10b981',
+                border: saveStatus === 'saving'
+                  ? '1px solid rgba(56, 189, 248, 0.3)'
+                  : saveStatus === 'error'
+                  ? '1px solid rgba(239, 68, 68, 0.3)'
+                  : '1px solid rgba(16, 185, 129, 0.25)',
+                flexShrink: 0,
+                transition: 'all 0.2s ease'
+              }}
+              title={saveStatus === 'error' ? (saveErrorMessage || 'Save failed') : (lastSavedTime ? `Last saved at ${lastSavedTime.toLocaleTimeString()}` : 'Workspace synced')}
+            >
+              {saveStatus === 'saving' ? (
+                <>
+                  <RefreshCw size={11} className="spin-active" />
+                  <span>Saving...</span>
+                </>
+              ) : saveStatus === 'error' ? (
+                <>
+                  <CloudOff size={11} />
+                  <span>Save failed</span>
+                </>
+              ) : (
+                <>
+                  <Cloud size={11} />
+                  <span>{lastSavedTime ? `Saved ${lastSavedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'Saved'}</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -638,12 +891,12 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
             <span>{syntaxValidation.valid ? 'Syntax OK' : `${syntaxValidation.errors.length} Syntax Warn`}</span>
           </button>
 
-          {/* Save / Restore buttons */}
+          {/* Immediate Save & Restore buttons */}
           <button
             onClick={handleSaveProgram}
             className="btn-secondary"
             style={{ padding: '5px 10px', fontSize: '11.5px' }}
-            title="Save your current ladder logic in local browser storage"
+            title="Save your current ladder logic immediately to persistent database"
             id="btn-save-program"
           >
             <Save size={12} /> Save
@@ -654,7 +907,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               onClick={handleRestoreProgram}
               className="btn-secondary"
               style={{ padding: '5px 10px', fontSize: '11.5px' }}
-              title="Restore saved program from local storage"
+              title="Restore latest saved workspace from database/storage"
               id="btn-restore-program"
             >
               <Download size={12} /> Restore

@@ -8,6 +8,7 @@ import problemRoutes from './routes/problems.js';
 import simulationRoutes from './routes/simulation.js';
 import submissionRoutes from './routes/submissions.js';
 import leaderboardRoutes from './routes/leaderboard.js';
+import workspaceRoutes from './routes/workspaces.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,7 @@ app.use('/api/problems', problemRoutes);
 app.use('/api/simulation', simulationRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/workspaces', workspaceRoutes);
 
 // System status / Health check
 app.get('/api/health', (req, res) => {
