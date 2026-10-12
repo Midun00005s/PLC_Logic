@@ -25,8 +25,8 @@
     {
       "id": "usr-1790829485729-kfc2",
       "role": "student",
-      "score": 200,
-      "solvedCount": 2,
+      "score": 400,
+      "solvedCount": 3,
       "createdAt": "2026-10-01T04:38:05.729Z",
       "email": "nivish.24eie@kongu.edu",
       "name": "Nivish",
@@ -1767,7 +1767,7 @@
         "rungs": [
           {
             "id": "rung-1",
-            "comment": "Overload Detection & Fault Latch: When load threshold drops (X0=0), latch fault M0",
+            "comment": "Overload Fault Detection & Latch: When load is unsafe (NC X0), latch fault bit M0",
             "elements": [
               {
                 "type": "NC",
@@ -1783,7 +1783,7 @@
           },
           {
             "id": "rung-2",
-            "comment": "Overload Fault Reset: When load is safe (X0=1) and operator presses Reset (X4=1), unlatch M0",
+            "comment": "Overload Fault Reset: When load is safe (NO X0) and Reset pressed (NO X4), unlatch fault M0",
             "elements": [
               {
                 "type": "NO",
@@ -1804,7 +1804,7 @@
           },
           {
             "id": "rung-3",
-            "comment": "Overload Indicator Lamp: Energizes whenever overload fault M0 is latched",
+            "comment": "Overload Indicator Lamp: Energizes whenever overload fault M0 is active",
             "elements": [
               {
                 "type": "NO",
@@ -1820,7 +1820,7 @@
           },
           {
             "id": "rung-4",
-            "comment": "LIFT UP Command: Sealed-in UP request with DOWN interlock, STOP, safe load (X0), and no fault (M0)",
+            "comment": "LIFT UP Command: Start with UP (X1) & not DOWN (NC X2), seal-in via Y0, interlocked with Y1, STOP, safe load, no fault",
             "elements": [
               {
                 "type": "BRANCH",
@@ -1830,6 +1830,11 @@
                       "type": "NO",
                       "address": "X1",
                       "tag": "UP_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
                     }
                   ],
                   [
@@ -1840,11 +1845,6 @@
                     }
                   ]
                 ]
-              },
-              {
-                "type": "NC",
-                "address": "X2",
-                "tag": "DOWN_PB"
               },
               {
                 "type": "NC",
@@ -1875,7 +1875,7 @@
           },
           {
             "id": "rung-5",
-            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "comment": "LIFT DOWN Command: Start with DOWN (X2) & not UP (NC X1), seal-in via Y1, interlocked with Y0, STOP, safe load, no fault",
             "elements": [
               {
                 "type": "BRANCH",
@@ -1885,6 +1885,11 @@
                       "type": "NO",
                       "address": "X2",
                       "tag": "DOWN_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X1",
+                      "tag": "UP_PB"
                     }
                   ],
                   [
@@ -1895,11 +1900,6 @@
                     }
                   ]
                 ]
-              },
-              {
-                "type": "NC",
-                "address": "X1",
-                "tag": "UP_PB"
               },
               {
                 "type": "NC",
@@ -2239,6 +2239,467 @@
     }
   ],
   "submissions": [
+    {
+      "id": "sub-1791844784453-17ddn",
+      "submittedAt": "2026-10-12T22:39:44.460Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Overload Fault Detection & Latch: When load is unsafe (NC X0), latch fault bit M0",
+            "elements": [
+              {
+                "type": "NC",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "SET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Overload Fault Reset: When load is safe (NO X0) and Reset pressed (NO X4), unlatch fault M0",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NO",
+                "address": "X4",
+                "tag": "RESET_PB"
+              },
+              {
+                "type": "RESET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-3",
+            "comment": "Overload Indicator Lamp: Energizes whenever overload fault M0 is active",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2",
+                "tag": "OVERLOAD_LAMP"
+              }
+            ]
+          },
+          {
+            "id": "rung-4",
+            "comment": "LIFT UP Command: Start with UP (X1) & not DOWN (NC X2), seal-in via Y0, interlocked with Y1, STOP, safe load, no fault",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0",
+                      "tag": "LIFT_UP"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              }
+            ]
+          },
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Start with DOWN (X2) & not UP (NC X1), seal-in via Y1, interlocked with Y0, STOP, safe load, no fault",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y1",
+                      "tag": "LIFT_DOWN"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 6,
+      "totalTests": 6,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 4,
+      "publicTotal": 4,
+      "hiddenPassed": 2,
+      "hiddenTotal": 2
+    },
+    {
+      "id": "sub-1791841974100-7ysxy",
+      "submittedAt": "2026-10-12T21:52:54.101Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "elements": [
+              {
+                "type": "NC",
+                "address": "X0"
+              },
+              {
+                "type": "SET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-1791841761949",
+            "comment": "Rung 2",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X0"
+              },
+              {
+                "type": "NO",
+                "address": "X4",
+                "tag": "RESET_PB"
+              },
+              {
+                "type": "RESET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-1791841789625",
+            "comment": "Rung 3",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2",
+                "tag": "OVERLOAD_LAMP"
+              }
+            ]
+          },
+          {
+            "id": "rung-1791841815977",
+            "comment": "Rung 4",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              }
+            ]
+          },
+          {
+            "id": "rung-1791841894810",
+            "comment": "Rung 5",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y1",
+                      "tag": "LIFT_DOWN"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 6,
+      "totalTests": 6,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 4,
+      "publicTotal": 4,
+      "hiddenPassed": 2,
+      "hiddenTotal": 2
+    },
+    {
+      "id": "sub-1791836661052-1s4de",
+      "submittedAt": "2026-10-12T20:24:21.053Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-admin-1",
+      "userName": "Admin",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "elements": []
+          }
+        ]
+      },
+      "passedTests": 0,
+      "totalTests": 12,
+      "scorePercent": 0,
+      "isAccepted": false,
+      "publicPassed": 0,
+      "publicTotal": 8,
+      "hiddenPassed": 0,
+      "hiddenTotal": 4
+    },
+    {
+      "id": "sub-1791834471335-wohgs",
+      "submittedAt": "2026-10-12T19:47:51.335Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "elements": []
+          }
+        ]
+      },
+      "passedTests": 1,
+      "totalTests": 6,
+      "scorePercent": 17,
+      "isAccepted": false,
+      "publicPassed": 1,
+      "publicTotal": 4,
+      "hiddenPassed": 0,
+      "hiddenTotal": 2
+    },
+    {
+      "id": "sub-1791834470439-dzuvm",
+      "submittedAt": "2026-10-12T19:47:50.439Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "elements": []
+          }
+        ]
+      },
+      "passedTests": 1,
+      "totalTests": 6,
+      "scorePercent": 17,
+      "isAccepted": false,
+      "publicPassed": 1,
+      "publicTotal": 4,
+      "hiddenPassed": 0,
+      "hiddenTotal": 2
+    },
+    {
+      "id": "sub-1791834469413-xbxxa",
+      "submittedAt": "2026-10-12T19:47:49.413Z",
+      "problemId": "prob-1791828405933",
+      "problemTitle": "Elevator Overload Protection and Direction Control",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "elements": []
+          }
+        ]
+      },
+      "passedTests": 1,
+      "totalTests": 6,
+      "scorePercent": 17,
+      "isAccepted": false,
+      "publicPassed": 1,
+      "publicTotal": 4,
+      "hiddenPassed": 0,
+      "hiddenTotal": 2
+    },
     {
       "id": "sub-1791833160784-7okn6",
       "submittedAt": "2026-10-12T19:26:00.785Z",
@@ -4709,21 +5170,21 @@
   ],
   "leaderboard": [
     {
-      "id": "usr-1791810385002-v4vl",
-      "name": "Midun",
-      "score": 300,
+      "id": "usr-1790829485729-kfc2",
+      "name": "Nivish",
+      "score": 400,
       "solved": 3,
       "avatar": "🎓",
       "badge": "PLC Master",
       "rank": 1
     },
     {
-      "id": "usr-1790829485729-kfc2",
-      "name": "Nivish",
-      "score": 200,
-      "solved": 2,
+      "id": "usr-1791810385002-v4vl",
+      "name": "Midun",
+      "score": 300,
+      "solved": 3,
       "avatar": "🎓",
-      "badge": "Active Solver",
+      "badge": "PLC Master",
       "rank": 2
     },
     {
@@ -4747,25 +5208,269 @@
   ],
   "workspaces": [
     {
+      "id": "ws-usr-1790829485729-kfc2-prob-02",
+      "userId": "usr-1790829485729-kfc2",
+      "problemId": "prob-02",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-0",
+            "comment": "Conveyor Belt Part Sorter & Batch Counter - Main Routine",
+            "elements": []
+          }
+        ]
+      },
+      "createdAt": "2026-10-12T19:44:20.566Z",
+      "updatedAt": "2026-10-12T19:44:20.566Z",
+      "lastActivity": "2026-10-12T19:44:20.566Z",
+      "testHistory": null,
+      "plcState": null,
+      "status": "Attempted"
+    },
+    {
+      "id": "ws-usr-1790829485729-kfc2-prob-03",
+      "userId": "usr-1790829485729-kfc2",
+      "problemId": "prob-03",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-0",
+            "comment": "Dual Tank Fill Level Control (Hysteresis) - Main Routine",
+            "elements": []
+          }
+        ]
+      },
+      "createdAt": "2026-10-12T19:44:24.147Z",
+      "updatedAt": "2026-10-12T19:44:24.147Z",
+      "lastActivity": "2026-10-12T19:44:24.147Z",
+      "testHistory": null,
+      "plcState": null,
+      "status": "Not Started"
+    },
+    {
+      "id": "ws-usr-admin-1-prob-1791803964635",
+      "userId": "usr-admin-1",
+      "problemId": "prob-1791803964635",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-0",
+            "comment": "New Industrial Automation Challenge - Main Routine",
+            "elements": []
+          }
+        ]
+      },
+      "createdAt": "2026-10-12T20:17:05.244Z",
+      "updatedAt": "2026-10-12T20:17:05.244Z",
+      "lastActivity": "2026-10-12T20:17:05.244Z",
+      "testHistory": null,
+      "plcState": null,
+      "status": "Not Started"
+    },
+    {
       "id": "ws-usr-admin-1-prob-1791828405933",
       "userId": "usr-admin-1",
       "problemId": "prob-1791828405933",
       "ladder": {
         "rungs": [
           {
-            "id": "rung-5",
-            "comment": "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+            "id": "rung-4",
+            "comment": "LIFT UP Command: Start with UP (X1) & not DOWN (NC X2), seal-in via Y0, interlocked with Y1, STOP, safe load, no fault",
             "elements": []
           }
         ]
       },
-      "createdAt": "2026-10-12T19:29:34.081Z",
-      "updatedAt": "2026-10-12T19:29:44.991Z",
-      "lastActivity": "2026-10-12T19:29:44.991Z",
+      "createdAt": "2026-10-12T21:38:43.658Z",
+      "updatedAt": "2026-10-12T21:43:19.258Z",
+      "lastActivity": "2026-10-12T21:43:19.258Z",
       "testHistory": null,
+      "plcState": null,
+      "status": "Solved"
+    },
+    {
+      "id": "ws-usr-1790829485729-kfc2-prob-1791828405933",
+      "userId": "usr-1790829485729-kfc2",
+      "problemId": "prob-1791828405933",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Overload Fault Detection & Latch: When load is unsafe (NC X0), latch fault bit M0",
+            "elements": [
+              {
+                "type": "NC",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "SET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Overload Fault Reset: When load is safe (NO X0) and Reset pressed (NO X4), unlatch fault M0",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NO",
+                "address": "X4",
+                "tag": "RESET_PB"
+              },
+              {
+                "type": "RESET",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              }
+            ]
+          },
+          {
+            "id": "rung-3",
+            "comment": "Overload Indicator Lamp: Energizes whenever overload fault M0 is active",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2",
+                "tag": "OVERLOAD_LAMP"
+              }
+            ]
+          },
+          {
+            "id": "rung-4",
+            "comment": "LIFT UP Command: Start with UP (X1) & not DOWN (NC X2), seal-in via Y0, interlocked with Y1, STOP, safe load, no fault",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0",
+                      "tag": "LIFT_UP"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              }
+            ]
+          },
+          {
+            "id": "rung-5",
+            "comment": "LIFT DOWN Command: Start with DOWN (X2) & not UP (NC X1), seal-in via Y1, interlocked with Y0, STOP, safe load, no fault",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X2",
+                      "tag": "DOWN_PB"
+                    },
+                    {
+                      "type": "NC",
+                      "address": "X1",
+                      "tag": "UP_PB"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y1",
+                      "tag": "LIFT_DOWN"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "Y0",
+                "tag": "LIFT_UP"
+              },
+              {
+                "type": "NC",
+                "address": "X3",
+                "tag": "STOP_PB"
+              },
+              {
+                "type": "NO",
+                "address": "X0",
+                "tag": "LOAD_OK"
+              },
+              {
+                "type": "NC",
+                "address": "M0",
+                "tag": "OVERLOAD_FAULT"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1",
+                "tag": "LIFT_DOWN"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-10-12T22:39:44.481Z",
+      "updatedAt": "2026-10-12T22:39:44.481Z",
+      "lastActivity": "2026-10-12T22:42:10.459Z",
+      "testHistory": {
+        "lastRunType": "PUBLIC_TESTS",
+        "passed": true,
+        "scorePercent": 100,
+        "passedTests": 4,
+        "testedAt": "2026-10-12T22:42:10.459Z"
+      },
       "plcState": {
-        "fault": "NORMAL",
-        "scanCount": 256
+        "fault": "EMERGENCY_STOP",
+        "scanCount": 242
       },
       "status": "Solved"
     }

@@ -510,13 +510,10 @@ class DatabaseStore {
     );
     if (hasAttempted) return 'Attempted';
 
-    // 3. In Progress: workspace exists with non-empty rungs or user additions
+    // 3. In Progress: workspace exists with saved rungs or modified edits
     const ws = (this.data.workspaces || []).find(w => w.userId === userId && w.problemId === problemId);
     if (ws && ws.ladder && Array.isArray(ws.ladder.rungs) && ws.ladder.rungs.length > 0) {
-      const hasRealWork = ws.ladder.rungs.some(r => Array.isArray(r.elements) && r.elements.length > 0) || ws.ladder.rungs.length > 1;
-      if (hasRealWork) {
-        return 'In Progress';
-      }
+      return 'In Progress';
     }
 
     return 'Not Started';
@@ -609,10 +606,6 @@ class DatabaseStore {
     const problemProgressList = activeProblems.map(p => {
       const status = this.resolveProblemStatus(userId, p.id);
       const ws = wsMap.get(p.id);
-      const hasRealWork = Boolean(
-        ws && ws.ladder?.rungs?.length > 0 &&
-        (ws.ladder.rungs.some(r => Array.isArray(r.elements) && r.elements.length > 0) || ws.ladder.rungs.length > 1)
-      );
 
       if (status === 'Solved') solvedCount++;
       else if (status === 'Attempted') attemptedCount++;
@@ -627,8 +620,8 @@ class DatabaseStore {
         tag: p.tag,
         status,
         lastActivity: ws?.lastActivity || ws?.updatedAt || null,
-        hasSavedWorkspace: hasRealWork,
-        rungsCount: ws?.ladder?.rungs?.length || 1,
+        hasSavedWorkspace: Boolean(ws && ws.ladder?.rungs?.length > 0),
+        rungsCount: ws?.ladder?.rungs?.length || p.starterLadder?.rungs?.length || 0,
         testHistory: ws?.testHistory || null
       };
     });
