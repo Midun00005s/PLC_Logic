@@ -16,7 +16,10 @@ import {
   Gauge,
   Box,
   Droplets,
-  Bell
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 
 export default function VirtualIOPanel({
@@ -32,9 +35,15 @@ export default function VirtualIOPanel({
   isScanning,
   setIsScanning,
   onStepScan,
-  onResetPlc
+  onResetPlc,
+  onCollapse
 }) {
   const [activeTab, setActiveTab] = useState('io'); // 'io' | 'twin' | 'faults'
+
+  const activeTimersCount = Object.values(timers).filter(t => t && (t.elapsed > 0 || t.done)).length;
+  const activeCountersCount = Object.values(counters).filter(c => c && (c.count > 0 || c.done)).length;
+  const hasActiveBlocks = activeTimersCount > 0 || activeCountersCount > 0;
+  const [isFunctionBlocksOpen, setIsFunctionBlocksOpen] = useState(hasActiveBlocks);
 
   // Momentary button press handlers
   const handleMomentaryDown = (address) => {
@@ -82,26 +91,28 @@ export default function VirtualIOPanel({
     }}>
       {/* Top PLC Controller Status Bar */}
       <div style={{
-        padding: '10px 14px',
+        padding: '10px 12px',
         background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        gap: '6px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
           <div style={{
             background: 'var(--bg-surface)',
             border: isScanning ? '1px solid #10b981' : '1px solid var(--border-muted)',
             borderRadius: '4px',
-            padding: '3px 8px',
+            padding: '3px 7px',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '5px',
             fontSize: '11px',
             fontFamily: 'var(--font-mono)',
             fontWeight: 'bold',
-            color: isScanning ? '#10b981' : 'var(--text-secondary)'
+            color: isScanning ? '#10b981' : 'var(--text-secondary)',
+            whiteSpace: 'nowrap'
           }}>
             <span className={`status-dot ${isScanning ? 'active' : 'inactive'}`} />
             PLC {isScanning ? 'RUN' : 'STOP'}
@@ -116,9 +127,10 @@ export default function VirtualIOPanel({
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '10.5px',
+              fontSize: '10px',
               color: '#ef4444',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap'
             }}>
               <AlertOctagon size={11} />
               {fault}
@@ -126,13 +138,14 @@ export default function VirtualIOPanel({
           )}
         </div>
 
-        {/* Scan Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {/* Scan Controls & Collapse Arrow */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           <button
             onClick={() => setIsScanning(!isScanning)}
             className="btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px' }}
+            style={{ padding: '4px 7px', fontSize: '11px' }}
             title={isScanning ? 'Pause Scan Loop' : 'Start Continuous Scan'}
+            id="btn-plc-toggle-scan"
           >
             {isScanning ? <Pause size={12} /> : <Play size={12} />}
           </button>
@@ -140,19 +153,32 @@ export default function VirtualIOPanel({
             onClick={onStepScan}
             disabled={isScanning}
             className="btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px' }}
+            style={{ padding: '4px 7px', fontSize: '11px' }}
             title="Execute Single 50ms Scan Step"
+            id="btn-plc-step-scan"
           >
             <StepForward size={12} />
           </button>
           <button
             onClick={onResetPlc}
             className="btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px' }}
+            style={{ padding: '4px 7px', fontSize: '11px' }}
             title="Reset PLC Outputs, Timers & Memory"
+            id="btn-plc-reset"
           >
             <RotateCcw size={12} />
           </button>
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              className="btn-secondary"
+              style={{ padding: '4px 6px', fontSize: '11px', color: 'var(--text-secondary)' }}
+              title="Slide & Collapse PLC Run Panel"
+              id="btn-collapse-io-panel"
+            >
+              <ChevronRight size={12} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -175,8 +201,8 @@ export default function VirtualIOPanel({
               onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: 1,
-                padding: '8px 10px',
-                fontSize: '11.5px',
+                padding: '8px 5px',
+                fontSize: '11px',
                 fontWeight: '600',
                 background: isActive ? 'var(--bg-card)' : 'transparent',
                 color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -184,12 +210,15 @@ export default function VirtualIOPanel({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
-                cursor: 'pointer'
+                gap: '4px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                minWidth: 0
               }}
+              title={tab.label}
             >
               <Icon size={12} />
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           );
         })}
@@ -423,21 +452,27 @@ export default function VirtualIOPanel({
                   <div
                     key={mKey}
                     style={{
-                      padding: '6px',
+                      padding: '5px 2px',
+                      minHeight: '44px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       background: isSet ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface)',
                       border: isSet ? '1px solid #10b981' : '1px solid var(--border-subtle)',
                       borderRadius: '4px',
                       textAlign: 'center',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '11px'
+                      fontSize: '11px',
+                      lineHeight: 1.2
                     }}
                   >
                     <span style={{ color: isSet ? '#10b981' : 'var(--text-secondary)', fontWeight: 'bold' }}>
                       {mKey}
                     </span>
-                    <div style={{ fontSize: '10px', color: isSet ? '#10b981' : 'var(--text-dim)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: isSet ? '#10b981' : 'var(--text-dim)', marginTop: '2px' }}>
                       {isSet ? '1' : '0'}
-                    </div>
+                    </span>
                   </div>
                 );
               })}
@@ -455,47 +490,74 @@ export default function VirtualIOPanel({
               flexDirection: 'column',
               gap: '8px'
             }}>
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-                FUNCTION BLOCKS (TIMERS & COUNTERS)
-              </span>
+              <button
+                onClick={() => setIsFunctionBlocksOpen(!isFunctionBlocksOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  width: '100%',
+                  color: 'inherit'
+                }}
+              >
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>FUNCTION BLOCKS (TIMERS & COUNTERS)</span>
+                  {hasActiveBlocks && (
+                    <span style={{ fontSize: '9.5px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '1px 5px', borderRadius: '3px' }}>
+                      ACTIVE
+                    </span>
+                  )}
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {isFunctionBlocksOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </span>
+              </button>
 
-              {Object.entries(timers).map(([tKey, tVal]) => {
-                const percent = Math.min(100, Math.round((tVal.elapsed / tVal.preset) * 100));
-                return (
-                  <div key={tKey} style={{ background: 'var(--bg-surface)', padding: '8px', borderRadius: '4px', border: tVal.done ? '1px solid #10b981' : '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: tVal.done ? '#10b981' : '#f59e0b' }}>
-                        {tKey} (TON On-Delay) {tVal.done && '• DONE'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                        {(tVal.elapsed / 1000).toFixed(1)}s / {(tVal.preset / 1000).toFixed(1)}s
-                      </span>
-                    </div>
-                    <div style={{ width: '100%', height: '5px', background: '#27272a', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${percent}%`, height: '100%', background: tVal.done ? '#10b981' : '#f59e0b' }} />
-                    </div>
-                  </div>
-                );
-              })}
+              {isFunctionBlocksOpen && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  {Object.entries(timers).map(([tKey, tVal]) => {
+                    const percent = Math.min(100, Math.round((tVal.elapsed / tVal.preset) * 100));
+                    return (
+                      <div key={tKey} style={{ background: 'var(--bg-surface)', padding: '8px', borderRadius: '4px', border: tVal.done ? '1px solid #10b981' : '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: tVal.done ? '#10b981' : '#f59e0b' }}>
+                            {tKey} (TON On-Delay) {tVal.done && '• DONE'}
+                          </span>
+                          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                            {(tVal.elapsed / 1000).toFixed(1)}s / {(tVal.preset / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                        <div style={{ width: '100%', height: '5px', background: '#27272a', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percent}%`, height: '100%', background: tVal.done ? '#10b981' : '#f59e0b' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
 
-              {Object.entries(counters).map(([cKey, cVal]) => {
-                const percent = Math.min(100, Math.round((cVal.count / cVal.preset) * 100));
-                return (
-                  <div key={cKey} style={{ background: 'var(--bg-surface)', padding: '8px', borderRadius: '4px', border: cVal.done ? '1px solid #10b981' : '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: cVal.done ? '#10b981' : '#38bdf8' }}>
-                        {cKey} (CTU Up-Counter) {cVal.done && '• DONE'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                        Count: {cVal.count} / {cVal.preset}
-                      </span>
-                    </div>
-                    <div style={{ width: '100%', height: '5px', background: '#27272a', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${percent}%`, height: '100%', background: cVal.done ? '#10b981' : '#38bdf8' }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  {Object.entries(counters).map(([cKey, cVal]) => {
+                    const percent = Math.min(100, Math.round((cVal.count / cVal.preset) * 100));
+                    return (
+                      <div key={cKey} style={{ background: 'var(--bg-surface)', padding: '8px', borderRadius: '4px', border: cVal.done ? '1px solid #10b981' : '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: cVal.done ? '#10b981' : '#38bdf8' }}>
+                            {cKey} (CTU Up-Counter) {cVal.done && '• DONE'}
+                          </span>
+                          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                            Count: {cVal.count} / {cVal.preset}
+                          </span>
+                        </div>
+                        <div style={{ width: '100%', height: '5px', background: '#27272a', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percent}%`, height: '100%', background: cVal.done ? '#10b981' : '#38bdf8' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

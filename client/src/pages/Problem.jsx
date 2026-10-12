@@ -23,8 +23,206 @@ import {
   Shield,
   Activity,
   Zap,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  Radio
 } from 'lucide-react';
+
+function renderInlineFormatted(text) {
+  if (!text) return null;
+  const parts = [];
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**')) {
+      const boldText = token.slice(2, -2);
+      parts.push(
+        <strong key={match.index} style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+          {boldText}
+        </strong>
+      );
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      const codeText = token.slice(1, -1);
+      let badgeColor = 'var(--text-primary)';
+      let badgeBg = 'rgba(255, 255, 255, 0.07)';
+      let badgeBorder = 'var(--border-subtle)';
+
+      if (/^X\d+/i.test(codeText) || codeText.includes('X0') || codeText.includes('X1') || codeText.includes('X2')) {
+        badgeColor = '#10b981';
+        badgeBg = 'rgba(16, 185, 129, 0.12)';
+        badgeBorder = 'rgba(16, 185, 129, 0.3)';
+      } else if (/^Y\d+/i.test(codeText) || codeText.includes('Y0') || codeText.includes('Y1')) {
+        badgeColor = '#38bdf8';
+        badgeBg = 'rgba(56, 189, 248, 0.12)';
+        badgeBorder = 'rgba(56, 189, 248, 0.3)';
+      } else if (/^T\d+/i.test(codeText)) {
+        badgeColor = '#f59e0b';
+        badgeBg = 'rgba(245, 158, 11, 0.12)';
+        badgeBorder = 'rgba(245, 158, 11, 0.3)';
+      } else if (/^M\d+/i.test(codeText)) {
+        badgeColor = '#c084fc';
+        badgeBg = 'rgba(192, 132, 252, 0.12)';
+        badgeBorder = 'rgba(192, 132, 252, 0.3)';
+      }
+
+      parts.push(
+        <code
+          key={match.index}
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            background: badgeBg,
+            border: `1px solid ${badgeBorder}`,
+            color: badgeColor,
+            padding: '1.5px 5.5px',
+            borderRadius: '4px',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            margin: '0 2px'
+          }}
+        >
+          {codeText}
+        </code>
+      );
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+}
+
+function FormattedDescription({ text }) {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+  const elements = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      const heading = line.replace('### ', '').trim();
+      elements.push(
+        <div
+          key={`heading-${i}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            margin: '18px 0 8px 0',
+            paddingBottom: '5px',
+            borderBottom: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            fontWeight: '700',
+            fontSize: '11px',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-mono)'
+          }}
+        >
+          <span style={{ width: '3px', height: '12px', background: '#10b981', borderRadius: '2px' }} />
+          <span>{heading}</span>
+        </div>
+      );
+    } else if (/^\d+\.\s/.test(line)) {
+      const match = line.match(/^(\d+)\.\s(.*)$/);
+      const num = match[1];
+      const body = match[2];
+      elements.push(
+        <div
+          key={`req-${i}`}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+            padding: '8px 10px',
+            margin: '6px 0',
+            fontSize: '12px',
+            lineHeight: 1.55
+          }}
+        >
+          <div
+            style={{
+              width: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid var(--border-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '10px',
+              fontWeight: 'bold',
+              color: 'var(--text-primary)',
+              flexShrink: 0,
+              marginTop: '1px',
+              fontFamily: 'var(--font-mono)'
+            }}
+          >
+            {num}
+          </div>
+          <div style={{ flex: 1, color: 'var(--text-secondary)' }}>
+            {renderInlineFormatted(body)}
+          </div>
+        </div>
+      );
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      const body = line.substring(2);
+      elements.push(
+        <div
+          key={`bullet-${i}`}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            margin: '4px 0',
+            padding: '3px 6px',
+            fontSize: '11.5px',
+            lineHeight: 1.5,
+            color: 'var(--text-secondary)'
+          }}
+        >
+          <span style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '13px', lineHeight: '14px' }}>•</span>
+          <div style={{ flex: 1 }}>{renderInlineFormatted(body)}</div>
+        </div>
+      );
+    } else {
+      elements.push(
+        <p
+          key={`p-${i}`}
+          style={{
+            fontSize: '12.5px',
+            lineHeight: 1.6,
+            color: 'var(--text-secondary)',
+            margin: '4px 0 8px 0'
+          }}
+        >
+          {renderInlineFormatted(line)}
+        </p>
+      );
+    }
+  }
+
+  return <div style={{ display: 'flex', flexDirection: 'column' }}>{elements}</div>;
+}
 
 export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   const { user, setUser } = useAuth();
@@ -43,9 +241,39 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   const [rungStates, setRungStates] = useState([]);
   const [plcState, setPlcState] = useState(null);
 
-  // Left sidebar tabs: 'problem' | 'pins' | 'tests'
+  // Sidebar collapse states (persisted across sessions)
   const [leftTab, setLeftTab] = useState('problem');
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('plc_left_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [isRightCollapsed, setIsRightCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('plc_right_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleLeftPanel = () => {
+    setIsLeftCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('plc_left_collapsed', next); } catch {}
+      return next;
+    });
+  };
+
+  const toggleRightPanel = () => {
+    setIsRightCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('plc_right_collapsed', next); } catch {}
+      return next;
+    });
+  };
 
   // Save / Restore & Validation State
   const [savedToast, setSavedToast] = useState(null);
@@ -444,14 +672,25 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           </button>
 
           <button
-            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
+            onClick={toggleLeftPanel}
             className="btn-secondary"
-            style={{ padding: '5px 10px', fontSize: '11.5px' }}
-            title={isLeftCollapsed ? 'Show Problem Specifications' : 'Collapse Specifications (Maximize Canvas)'}
-            id="btn-toggle-full-canvas"
+            style={{ padding: '5px 10px', fontSize: '11.5px', background: isLeftCollapsed ? 'var(--bg-card-hover)' : 'var(--bg-card)' }}
+            title={isLeftCollapsed ? 'Show Problem Specifications (Slide Right)' : 'Collapse Specifications (Slide Left)'}
+            id="btn-toggle-specs-panel"
           >
-            <Layers size={12} />
-            {isLeftCollapsed ? 'Show Specs' : 'Full Canvas'}
+            <FileText size={12} />
+            {isLeftCollapsed ? 'Show Specs' : 'Hide Specs'}
+          </button>
+
+          <button
+            onClick={toggleRightPanel}
+            className="btn-secondary"
+            style={{ padding: '5px 10px', fontSize: '11.5px', background: isRightCollapsed ? 'var(--bg-card-hover)' : 'var(--bg-card)' }}
+            title={isRightCollapsed ? 'Show PLC Run & I/O Rack (Slide Left)' : 'Collapse PLC Run Panel (Slide Right)'}
+            id="btn-toggle-plc-panel"
+          >
+            <Radio size={12} />
+            {isRightCollapsed ? 'Show PLC Run' : 'Hide PLC Run'}
           </button>
 
           <button
@@ -477,7 +716,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       </div>
 
       {/* Main 3-Column Split View */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Left Column: Problem Statement & I/O Specifications */}
         <div style={{
           width: isLeftCollapsed ? '0px' : '330px',
@@ -486,15 +725,16 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          transition: 'width 0.2s ease'
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          flexShrink: 0
         }}>
           {/* Subtabs: Description | Pin Mapping | Test Cases */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-card)' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-card)', alignItems: 'center' }}>
             <button
               onClick={() => setLeftTab('problem')}
               style={{
                 flex: 1,
-                padding: '9px 8px',
+                padding: '9px 6px',
                 fontSize: '11.5px',
                 fontWeight: '600',
                 color: leftTab === 'problem' ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -503,8 +743,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
-                cursor: 'pointer'
+                gap: '4px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               <FileText size={12} /> Specs
@@ -513,7 +754,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               onClick={() => setLeftTab('pins')}
               style={{
                 flex: 1,
-                padding: '9px 8px',
+                padding: '9px 6px',
                 fontSize: '11.5px',
                 fontWeight: '600',
                 color: leftTab === 'pins' ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -522,8 +763,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
-                cursor: 'pointer'
+                gap: '4px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               <Sliders size={12} /> I/O Map
@@ -532,7 +774,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               onClick={() => setLeftTab('tests')}
               style={{
                 flex: 1,
-                padding: '9px 8px',
+                padding: '9px 6px',
                 fontSize: '11.5px',
                 fontWeight: '600',
                 color: leftTab === 'tests' ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -541,21 +783,37 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
-                cursor: 'pointer'
+                gap: '4px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               <Terminal size={12} /> Tests
+            </button>
+            <button
+              onClick={toggleLeftPanel}
+              style={{
+                padding: '0 8px',
+                height: '35px',
+                background: 'transparent',
+                border: 'none',
+                borderLeft: '1px solid var(--border-subtle)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Slide & Collapse Description Panel"
+              id="btn-collapse-specs-header"
+            >
+              <ChevronLeft size={13} />
             </button>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
             {leftTab === 'problem' && (
-              <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-                <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-main)' }}>
-                  {problem.description}
-                </div>
-              </div>
+              <FormattedDescription text={problem.description} />
             )}
 
             {leftTab === 'pins' && (
@@ -653,8 +911,68 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           </div>
         </div>
 
+        {/* Left Floating Sliding Arrow Handle */}
+        <button
+          onClick={toggleLeftPanel}
+          style={{
+            position: 'absolute',
+            left: isLeftCollapsed ? '0px' : '330px',
+            top: '45%',
+            transform: 'translateY(-50%)',
+            zIndex: 45,
+            width: '18px',
+            height: '46px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-muted)',
+            borderLeft: isLeftCollapsed ? 'none' : '1px solid var(--border-muted)',
+            borderRadius: isLeftCollapsed ? '0 6px 6px 0' : '6px 0 0 6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isLeftCollapsed ? '#10b981' : 'var(--text-secondary)',
+            transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+            padding: 0
+          }}
+          title={isLeftCollapsed ? 'Slide to Show Description & Specs' : 'Slide to Hide Description & Specs'}
+          id="arrow-slide-left-panel"
+        >
+          {isLeftCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+        </button>
+
+        {/* Right Floating Sliding Arrow Handle */}
+        <button
+          onClick={toggleRightPanel}
+          style={{
+            position: 'absolute',
+            right: isRightCollapsed ? '0px' : '340px',
+            top: '45%',
+            transform: 'translateY(-50%)',
+            zIndex: 45,
+            width: '18px',
+            height: '46px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-muted)',
+            borderRight: isRightCollapsed ? 'none' : '1px solid var(--border-muted)',
+            borderRadius: isRightCollapsed ? '6px 0 0 6px' : '0 6px 6px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isRightCollapsed ? '#38bdf8' : 'var(--text-secondary)',
+            transition: 'right 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+            padding: 0
+          }}
+          title={isRightCollapsed ? 'Slide to Show PLC Run & Hardware Rack' : 'Slide to Hide PLC Run & Hardware Rack'}
+          id="arrow-slide-right-panel"
+        >
+          {isRightCollapsed ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
+        </button>
+
         {/* Center Column: The Visual Ladder Logic Editor */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <LadderEditor
               ladder={ladder}
@@ -729,22 +1047,34 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
         </div>
 
         {/* Right Column: Virtual I/O Hardware Rack & Plant Twin */}
-        <div style={{ width: '340px', height: '100%', overflow: 'hidden' }}>
-          <VirtualIOPanel
-            inputs={inputs}
-            setInputs={setInputs}
-            outputs={outputs}
-            timers={timers}
-            counters={counters}
-            fault={fault}
-            setFault={setFault}
-            problem={problem}
-            plcState={plcState}
-            isScanning={isScanning}
-            setIsScanning={setIsScanning}
-            onStepScan={handleStepScan}
-            onResetPlc={handleResetPlc}
-          />
+        <div style={{
+          width: isRightCollapsed ? '0px' : '340px',
+          height: '100%',
+          overflow: 'hidden',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          display: 'flex',
+          flexDirection: 'column',
+          flexShrink: 0,
+          borderLeft: isRightCollapsed ? 'none' : '1px solid var(--border-subtle)'
+        }}>
+          <div style={{ width: '340px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <VirtualIOPanel
+              inputs={inputs}
+              setInputs={setInputs}
+              outputs={outputs}
+              timers={timers}
+              counters={counters}
+              fault={fault}
+              setFault={setFault}
+              problem={problem}
+              plcState={plcState}
+              isScanning={isScanning}
+              setIsScanning={setIsScanning}
+              onStepScan={handleStepScan}
+              onResetPlc={handleResetPlc}
+              onCollapse={toggleRightPanel}
+            />
+          </div>
         </div>
       </div>
 

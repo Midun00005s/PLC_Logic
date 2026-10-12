@@ -31,6 +31,39 @@
       "email": "nivish.24eie@kongu.edu",
       "name": "Nivish",
       "passwordHash": "123456"
+    },
+    {
+      "id": "usr-1791810385002-v4vl",
+      "role": "student",
+      "score": 300,
+      "solvedCount": 3,
+      "createdAt": "2026-10-12T13:06:25.005Z",
+      "email": "midun@gmail.com",
+      "username": "midun",
+      "name": "Midun",
+      "passwordHash": "123456"
+    },
+    {
+      "id": "usr-1791810421279-kstq",
+      "role": "student",
+      "score": 100,
+      "solvedCount": 1,
+      "createdAt": "2026-10-12T13:07:01.279Z",
+      "email": "kirithiksh@gmail.com",
+      "username": "kirithiksh",
+      "name": "Kirithiksh",
+      "passwordHash": "123456"
+    },
+    {
+      "id": "usr-1791810459896-kq36",
+      "role": "student",
+      "score": 100,
+      "solvedCount": 1,
+      "createdAt": "2026-10-12T13:07:39.896Z",
+      "email": "mathi@gmail.com",
+      "username": "mathivanan",
+      "name": "Mathivanan",
+      "passwordHash": "123456"
     }
   ],
   "problems": [
@@ -1657,6 +1690,348 @@
   ],
   "submissions": [
     {
+      "id": "sub-1791810572033-goal2",
+      "submittedAt": "2026-10-12T13:09:32.033Z",
+      "problemId": "prob-01",
+      "problemTitle": "Motor Start / Stop (3-Wire Seal-in)",
+      "userId": "usr-1791810459896-kq36",
+      "userName": "Mathivanan",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Motor Start/Stop with Auxiliary Contact Seal-in",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "NC",
+                "address": "X2"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Run Indicator Lamp",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "Y0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 6,
+      "totalTests": 6,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 3,
+      "publicTotal": 3,
+      "hiddenPassed": 3,
+      "hiddenTotal": 3
+    },
+    {
+      "id": "sub-1791810558410-vuupu",
+      "submittedAt": "2026-10-12T13:09:18.410Z",
+      "problemId": "prob-1791188949918",
+      "problemTitle": "Pump Station Automatic Level Control",
+      "userId": "usr-1791810421279-kstq",
+      "userName": "Kirithiksh",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Pump Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 3,
+      "totalTests": 3,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
+    {
+      "id": "sub-1791810536227-llwme",
+      "submittedAt": "2026-10-12T13:08:56.227Z",
+      "problemId": "prob-1791803964635",
+      "problemTitle": "New Industrial Automation Challenge",
+      "userId": "usr-1791810385002-v4vl",
+      "userName": "Midun",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Actuator Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 3,
+      "totalTests": 3,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
+    {
+      "id": "sub-1791810525463-9wz5f",
+      "submittedAt": "2026-10-12T13:08:45.463Z",
+      "problemId": "prob-01",
+      "problemTitle": "Motor Start / Stop (3-Wire Seal-in)",
+      "userId": "usr-1791810385002-v4vl",
+      "userName": "Midun",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Motor Start/Stop with Auxiliary Contact Seal-in",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "NC",
+                "address": "X2"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Run Indicator Lamp",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "Y0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 6,
+      "totalTests": 6,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 3,
+      "publicTotal": 3,
+      "hiddenPassed": 3,
+      "hiddenTotal": 3
+    },
+    {
+      "id": "sub-1791810495170-cljaq",
+      "submittedAt": "2026-10-12T13:08:15.170Z",
+      "problemId": "prob-1791188949918",
+      "problemTitle": "Pump Station Automatic Level Control",
+      "userId": "usr-1791810385002-v4vl",
+      "userName": "Midun",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Pump Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 3,
+      "totalTests": 3,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
+    {
+      "id": "sub-1791810488356-7x6aw",
+      "submittedAt": "2026-10-12T13:08:08.356Z",
+      "problemId": "prob-1791188949918",
+      "problemTitle": "Pump Station Automatic Level Control",
+      "userId": "usr-1791810385002-v4vl",
+      "userName": "Midun",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Pump Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 3,
+      "totalTests": 3,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
+    {
       "id": "sub-1791805693369-fs1tp",
       "submittedAt": "2026-10-12T11:48:13.370Z",
       "problemId": "prob-02",
@@ -3235,13 +3610,40 @@
   ],
   "leaderboard": [
     {
+      "id": "usr-1791810385002-v4vl",
+      "name": "Midun",
+      "score": 300,
+      "solved": 3,
+      "avatar": "🎓",
+      "badge": "PLC Master",
+      "rank": 1
+    },
+    {
       "id": "usr-1790829485729-kfc2",
       "name": "Nivish",
       "score": 200,
       "solved": 2,
       "avatar": "🎓",
       "badge": "Active Solver",
-      "rank": 1
+      "rank": 2
+    },
+    {
+      "id": "usr-1791810421279-kstq",
+      "name": "Kirithiksh",
+      "score": 100,
+      "solved": 1,
+      "avatar": "🎓",
+      "badge": "Active Solver",
+      "rank": 3
+    },
+    {
+      "id": "usr-1791810459896-kq36",
+      "name": "Mathivanan",
+      "score": 100,
+      "solved": 1,
+      "avatar": "🎓",
+      "badge": "Active Solver",
+      "rank": 4
     }
   ]
 }
