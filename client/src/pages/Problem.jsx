@@ -474,25 +474,19 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     }
 
     function initStarter(data) {
-      let starter;
-      if (data.starterLadder?.rungs?.length > 0) {
-        starter = JSON.parse(JSON.stringify(data.starterLadder));
-      } else {
-        starter = {
-          rungs: [
-            {
-              id: 'rung-1',
-              comment: 'Initial Rung',
-              elements: [
-                { type: 'NO', address: data.inputs?.[0]?.address || 'X0' },
-                { type: 'COIL', address: data.outputs?.[0]?.address || 'Y0' }
-              ]
-            }
-          ]
-        };
-      }
-      setLadder(starter);
-      lastSavedJsonRef.current = JSON.stringify(starter);
+      // Clean, empty workspace for newly opened problem
+      const defaultComment = data?.title ? `${data.title} - Main Routine` : 'Main Control Routine';
+      const cleanStarter = {
+        rungs: [
+          {
+            id: 'rung-0',
+            comment: defaultComment,
+            elements: []
+          }
+        ]
+      };
+      setLadder(cleanStarter);
+      lastSavedJsonRef.current = JSON.stringify(cleanStarter);
     }
 
     fetchProblemAndWorkspace();
@@ -652,13 +646,21 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     }
   };
 
-  // Revert ladder to starter template and clear saved workspace
+  // Revert ladder to clean initial state and clear saved workspace
   const handleRevertLadder = async () => {
-    if (!problem?.starterLadder) return;
-    if (window.confirm('Reset ladder logic to original starter code? Any saved progress on this challenge will be reset.')) {
-      const starter = JSON.parse(JSON.stringify(problem.starterLadder));
-      setLadder(starter);
-      lastSavedJsonRef.current = JSON.stringify(starter);
+    if (window.confirm('Reset ladder logic to a clean initial state? Any saved progress on this challenge will be reset.')) {
+      const defaultComment = problem?.title ? `${problem.title} - Main Routine` : 'Main Control Routine';
+      const cleanStarter = {
+        rungs: [
+          {
+            id: 'rung-0',
+            comment: defaultComment,
+            elements: []
+          }
+        ]
+      };
+      setLadder(cleanStarter);
+      lastSavedJsonRef.current = JSON.stringify(cleanStarter);
       handleResetPlc();
 
       // Clear local storage
