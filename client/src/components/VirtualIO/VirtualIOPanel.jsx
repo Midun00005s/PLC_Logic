@@ -56,7 +56,7 @@ export default function VirtualIOPanel({
       {/* Top PLC Controller Rack Status Bar */}
       <div style={{
         padding: '12px 16px',
-        background: '#070a10',
+        background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
@@ -64,8 +64,8 @@ export default function VirtualIOPanel({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
-            background: isScanning ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-            border: isScanning ? '1px solid #10b981' : '1px solid #f59e0b',
+            background: isScanning ? 'var(--bg-surface)' : 'var(--bg-surface)',
+            border: isScanning ? '1px solid var(--border-focus)' : '1px solid var(--border-muted)',
             borderRadius: '6px',
             padding: '3px 8px',
             display: 'flex',
@@ -74,7 +74,7 @@ export default function VirtualIOPanel({
             fontSize: '11px',
             fontFamily: 'var(--font-mono)',
             fontWeight: 'bold',
-            color: isScanning ? '#10b981' : '#f59e0b'
+            color: isScanning ? 'var(--text-primary)' : 'var(--text-secondary)'
           }}>
             <span className={`status-dot ${isScanning ? 'active' : 'inactive'}`} />
             PLC {isScanning ? 'RUN' : 'STOP'}
@@ -108,7 +108,7 @@ export default function VirtualIOPanel({
             title={isScanning ? 'Pause PLC scan loop' : 'Start continuous scan'}
             id="btn-toggle-scan"
           >
-            {isScanning ? <Pause size={13} /> : <Play size={13} />}
+            {isScanning ? <Pause size={13} /> : <Play size={13} fill="currentColor" />}
             {isScanning ? 'Pause' : 'Scan'}
           </button>
 
@@ -147,9 +147,9 @@ export default function VirtualIOPanel({
             padding: '8px 12px',
             fontSize: '12px',
             fontWeight: '600',
-            color: activeTab === 'io' ? 'var(--plc-cyan)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'io' ? '2px solid var(--plc-cyan)' : 'none',
-            background: activeTab === 'io' ? 'rgba(6, 182, 212, 0.08)' : 'transparent'
+            color: activeTab === 'io' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'io' ? '2px solid var(--text-primary)' : 'none',
+            background: activeTab === 'io' ? 'var(--bg-card-hover)' : 'transparent'
           }}
         >
           Virtual I/O Rack
@@ -162,9 +162,9 @@ export default function VirtualIOPanel({
             padding: '8px 12px',
             fontSize: '12px',
             fontWeight: '600',
-            color: activeTab === 'twin' ? 'var(--plc-cyan)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'twin' ? '2px solid var(--plc-cyan)' : 'none',
-            background: activeTab === 'twin' ? 'rgba(6, 182, 212, 0.08)' : 'transparent'
+            color: activeTab === 'twin' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'twin' ? '2px solid var(--text-primary)' : 'none',
+            background: activeTab === 'twin' ? 'var(--bg-card-hover)' : 'transparent'
           }}
         >
           Digital Twin View

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { 
   X, Check, Sparkles, Sliders, Palette, Zap, 
-  Compass, Cpu, Terminal, Sun, Grid, Dot, Layers, Coffee
+  Compass, Cpu, Terminal, Sun, Grid, Dot, Layers, Coffee, Moon
 } from 'lucide-react';
 
 export default function ThemeModal({ isOpen, onClose }) {
@@ -21,6 +21,7 @@ export default function ThemeModal({ isOpen, onClose }) {
 
   const getThemeIcon = (iconName) => {
     switch (iconName) {
+      case 'Moon': return <Moon size={18} />;
       case 'Coffee': return <Coffee size={18} />;
       case 'Zap': return <Zap size={18} />;
       case 'Compass': return <Compass size={18} />;
@@ -79,12 +80,12 @@ export default function ThemeModal({ isOpen, onClose }) {
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              background: 'linear-gradient(135deg, var(--plc-cyan), var(--plc-purple))',
+              background: 'var(--text-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff',
-              boxShadow: '0 0 14px var(--live-wire-glow)'
+              color: 'var(--bg-primary)',
+              boxShadow: 'var(--shadow-sm)'
             }}>
               <Palette size={20} />
             </div>
@@ -129,7 +130,7 @@ export default function ThemeModal({ isOpen, onClose }) {
                 alignItems: 'center',
                 gap: '6px'
               }}>
-                <Sparkles size={14} color="var(--plc-cyan)" /> 
+                <Sparkles size={14} color="var(--text-primary)" /> 
                 Preset Environments ({themes.length})
               </span>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
@@ -152,7 +153,7 @@ export default function ThemeModal({ isOpen, onClose }) {
                     style={{
                       background: isSelected ? 'var(--bg-card-hover)' : 'var(--bg-card)',
                       border: isSelected 
-                        ? `2px solid var(--plc-cyan)` 
+                        ? `2px solid var(--border-focus)` 
                         : '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-lg)',
                       padding: '16px',
@@ -162,7 +163,7 @@ export default function ThemeModal({ isOpen, onClose }) {
                       gap: '12px',
                       position: 'relative',
                       transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? '0 0 16px var(--live-wire-glow)' : 'none',
+                      boxShadow: isSelected ? 'var(--shadow-md)' : 'none',
                       cursor: 'pointer'
                     }}
                   >
@@ -196,8 +197,8 @@ export default function ThemeModal({ isOpen, onClose }) {
                             textTransform: 'uppercase',
                             padding: '1px 5px',
                             borderRadius: '4px',
-                            background: t.category === 'light' ? 'rgba(2, 132, 199, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-                            color: t.category === 'light' ? 'var(--plc-cyan)' : 'var(--text-muted)'
+                            background: 'var(--bg-elevated)',
+                            color: 'var(--text-secondary)'
                           }}>
                             {t.category}
                           </span>
@@ -206,8 +207,8 @@ export default function ThemeModal({ isOpen, onClose }) {
 
                       {isSelected && (
                         <div style={{
-                          background: 'var(--plc-cyan)',
-                          color: '#000',
+                          background: 'var(--text-primary)',
+                          color: 'var(--bg-primary)',
                           borderRadius: '50%',
                           width: '20px',
                           height: '20px',
@@ -290,7 +291,7 @@ export default function ThemeModal({ isOpen, onClose }) {
               alignItems: 'center',
               gap: '6px'
             }}>
-              <Grid size={14} color="var(--plc-cyan)" /> 
+              <Grid size={14} color="var(--text-primary)" /> 
               Background Blueprint / Grid Texture
             </div>
 
@@ -313,9 +314,9 @@ export default function ThemeModal({ isOpen, onClose }) {
                       alignItems: 'flex-start',
                       gap: '4px',
                       borderRadius: 'var(--radius-md)',
-                      borderColor: isSelected ? 'var(--plc-cyan)' : 'var(--border-muted)',
-                      background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-card)',
-                      color: isSelected ? 'var(--plc-cyan)' : 'var(--text-primary)',
+                      borderColor: isSelected ? 'var(--border-focus)' : 'var(--border-muted)',
+                      background: isSelected ? 'var(--bg-card-hover)' : 'var(--bg-card)',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
                       textAlign: 'left'
                     }}
                   >

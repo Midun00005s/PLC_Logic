@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import ThemeModal from './ThemeModal';
 import { 
   Zap, Cpu, Award, Shield, BookOpen, User, LogOut, 
-  LayoutDashboard, GraduationCap, Lock, LogIn, ArrowRight, Palette
+  LayoutDashboard, GraduationCap, Lock, LogIn, ArrowRight, Menu, X
 } from 'lucide-react';
 
 export default function Navbar({ activePage, setActivePage }) {
   const { user, logout, isAdmin, isStudent } = useAuth();
-  const { activeThemeObj } = useTheme();
-  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleBrandClick = () => {
+    setIsMobileMenuOpen(false);
     if (isAdmin) {
       setActivePage('admin-dashboard');
     } else if (isStudent) {
@@ -22,217 +20,245 @@ export default function Navbar({ activePage, setActivePage }) {
     }
   };
 
+  const handleNavigate = (page) => {
+    setActivePage(page);
+    setIsMobileMenuOpen(false);
+  };
+
   const handleLogout = () => {
     logout();
+    setIsMobileMenuOpen(false);
     setActivePage('login');
   };
 
   return (
-    <header className="app-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <button 
-          className="brand-section" 
-          onClick={handleBrandClick}
-          id="nav-brand-button"
-        >
-          <div className="brand-logo-badge">
-            <Zap size={20} fill="#000" />
-          </div>
-          <div>
-            <div className="brand-title">PLC LOGIC ARENA</div>
-            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-              IEC 61131-3 BENCHMARK
-            </div>
-          </div>
-        </button>
-
-        <div className="brand-status-tag">
-          <span className="status-dot active"></span>
-          PLC CORE: ONLINE
-        </div>
-      </div>
-
-      <nav className="nav-links">
-        {/* If logged in as Student */}
-        {isStudent && (
-          <button
-            className={`nav-item ${activePage === 'student-dashboard' || activePage === 'problem' ? 'active' : ''}`}
-            onClick={() => setActivePage('student-dashboard')}
-            id="nav-student-dashboard-tab"
+    <>
+      <header className="app-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            className="brand-section" 
+            onClick={handleBrandClick}
+            id="nav-brand-button"
           >
-            <GraduationCap size={16} />
-            Student Dashboard
+            <div className="brand-logo-badge">
+              <Zap size={20} fill="currentColor" stroke="currentColor" />
+            </div>
+            <div>
+              <div className="brand-title">PLC LOGIC ARENA</div>
+              <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.55)', fontFamily: 'var(--font-mono)' }}>
+                IEC 61131-3 BENCHMARK
+              </div>
+            </div>
           </button>
-        )}
 
-        {/* If logged in as Super Admin */}
-        {isAdmin && (
-          <>
-            <button
-              className={`nav-item ${activePage === 'admin-dashboard' ? 'active' : ''}`}
-              onClick={() => setActivePage('admin-dashboard')}
-              id="nav-admin-dashboard-tab"
-              style={{ color: activePage === 'admin-dashboard' ? '#c084fc' : undefined }}
-            >
-              <Shield size={16} color="#c084fc" />
-              Super Admin Dashboard
-            </button>
+          <div className="brand-status-tag">
+            <span className="status-dot active"></span>
+            <span>PLC CORE: ONLINE</span>
+          </div>
+        </div>
+
+        {/* Desktop Navigation Links */}
+        <nav className="nav-links">
+          {/* If logged in as Student */}
+          {isStudent && (
             <button
               className={`nav-item ${activePage === 'student-dashboard' || activePage === 'problem' ? 'active' : ''}`}
-              onClick={() => setActivePage('student-dashboard')}
-              id="nav-preview-arena-tab"
-            >
-              <Cpu size={16} />
-              Challenge Arena
-            </button>
-          </>
-        )}
-
-        <button
-          className={`nav-item ${activePage === 'leaderboard' ? 'active' : ''}`}
-          onClick={() => setActivePage('leaderboard')}
-          id="nav-leaderboard-tab"
-        >
-          <Award size={16} />
-          Leaderboard
-        </button>
-
-        <button
-          className={`nav-item ${activePage === 'docs' ? 'active' : ''}`}
-          onClick={() => setActivePage('docs')}
-          id="nav-docs-tab"
-        >
-          <BookOpen size={16} />
-          PLC Cheatsheet
-        </button>
-      </nav>
-
-      <div className="header-actions">
-        {/* Quick Theme Switcher Button */}
-        <button
-          className="btn-secondary"
-          onClick={() => setIsThemeModalOpen(true)}
-          title={`Active Theme: ${activeThemeObj.name} (Click to switch)`}
-          id="btn-nav-theme-switcher"
-          style={{
-            padding: '5px 11px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '7px',
-            fontSize: '12px',
-            borderRadius: '20px',
-            background: 'var(--nav-item-bg, var(--bg-card))',
-            borderColor: 'var(--nav-border, var(--border-muted))',
-            cursor: 'pointer'
-          }}
-        >
-          <span 
-            style={{
-              width: '9px',
-              height: '9px',
-              borderRadius: '50%',
-              background: activeThemeObj.colors.accent,
-              boxShadow: `0 0 7px ${activeThemeObj.colors.accent}`
-            }}
-          />
-          <Palette size={13} color="var(--nav-icon-color, var(--plc-cyan))" />
-          <span style={{ 
-            fontFamily: 'var(--font-mono)', 
-            fontSize: '11px', 
-            fontWeight: '600',
-            letterSpacing: '0.3px',
-            color: 'var(--nav-text-primary, var(--text-primary))'
-          }}>
-            {activeThemeObj.name}
-          </span>
-        </button>
-
-        {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* User Profile Badge */}
-            <div className="user-badge" style={{ border: isAdmin ? '1px solid rgba(139, 92, 246, 0.4)' : undefined }}>
-              <div 
-                className="user-avatar" 
-                style={{ 
-                  background: isAdmin 
-                    ? 'linear-gradient(135deg, #8b5cf6, #c084fc)' 
-                    : 'linear-gradient(135deg, #3b82f6, #06b6d4)' 
-                }}
-              >
-                {isAdmin ? 'A' : (user.name ? user.name.charAt(0) : 'U')}
-              </div>
-              <div className="user-info">
-                <span className="user-name">
-                  {isAdmin ? 'Admin' : user.name}
-                </span>
-                <span className="user-role" style={{ color: isAdmin ? '#c084fc' : 'var(--plc-cyan)' }}>
-                  {isAdmin ? 'SUPER ADMIN' : `${user.score || 0} PTS • ${user.solvedCount || 0} SOLVED`}
-                </span>
-              </div>
-            </div>
-
-            <button
-              className="btn-secondary"
-              style={{ padding: '6px 10px' }}
-              onClick={handleLogout}
-              title="Sign out"
-              id="btn-nav-logout"
-            >
-              <LogOut size={15} />
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              className="btn-secondary"
-              onClick={() => setActivePage('login')}
-              id="btn-nav-signin"
-              style={{
-                fontSize: '13px',
-                padding: '7px 14px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                borderColor: activePage === 'login' ? 'var(--nav-active-border, var(--plc-cyan))' : 'var(--nav-border, var(--border-muted))',
-                color: activePage === 'login' ? 'var(--nav-active-border, var(--plc-cyan))' : 'var(--nav-text-primary, var(--text-primary))',
-                background: activePage === 'login' ? 'var(--nav-item-bg-hover, rgba(255, 255, 255, 0.2))' : 'var(--nav-item-bg, var(--bg-card))'
-              }}
-            >
-              <LogIn size={14} />
-              <span>Sign In</span>
-            </button>
-
-            <button
-              className="btn-primary"
-              onClick={() => setActivePage('register')}
-              id="btn-nav-register"
-              style={{
-                fontSize: '13px',
-                padding: '7px 16px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: activePage === 'register' 
-                  ? 'linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%)' 
-                  : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                color: activePage === 'register' ? '#000' : '#032014',
-                boxShadow: activePage === 'register' 
-                  ? '0 2px 10px rgba(6, 182, 212, 0.4)' 
-                  : '0 2px 8px rgba(16, 185, 129, 0.3)'
-              }}
+              onClick={() => handleNavigate('student-dashboard')}
+              id="nav-student-dashboard-tab"
             >
               <GraduationCap size={15} />
-              <span>Register</span>
+              <span>Student Dashboard</span>
             </button>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* Theme Customizer Modal */}
-      <ThemeModal 
-        isOpen={isThemeModalOpen} 
-        onClose={() => setIsThemeModalOpen(false)} 
-      />
-    </header>
+          {/* If logged in as Super Admin */}
+          {isAdmin && (
+            <>
+              <button
+                className={`nav-item ${activePage === 'admin-dashboard' ? 'active' : ''}`}
+                onClick={() => handleNavigate('admin-dashboard')}
+                id="nav-admin-dashboard-tab"
+              >
+                <Shield size={15} />
+                <span>Super Admin</span>
+              </button>
+              <button
+                className={`nav-item ${activePage === 'student-dashboard' || activePage === 'problem' ? 'active' : ''}`}
+                onClick={() => handleNavigate('student-dashboard')}
+                id="nav-preview-arena-tab"
+              >
+                <Cpu size={15} />
+                <span>Challenge Arena</span>
+              </button>
+            </>
+          )}
+
+          <button
+            className={`nav-item ${activePage === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => handleNavigate('leaderboard')}
+            id="nav-leaderboard-tab"
+          >
+            <Award size={15} />
+            <span>Leaderboard</span>
+          </button>
+
+          <button
+            className={`nav-item ${activePage === 'docs' ? 'active' : ''}`}
+            onClick={() => handleNavigate('docs')}
+            id="nav-docs-tab"
+          >
+            <BookOpen size={15} />
+            <span>PLC Cheatsheet</span>
+          </button>
+        </nav>
+
+        {/* Actions Section */}
+        <div className="header-actions">
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* User Profile Badge */}
+              <div className="user-badge">
+                <div className="user-avatar">
+                  {isAdmin ? 'A' : (user.name ? user.name.charAt(0) : 'U')}
+                </div>
+                <div className="user-info">
+                  <span className="user-name">
+                    {isAdmin ? 'Admin' : user.name}
+                  </span>
+                  <span className="user-role" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                    {isAdmin ? 'SUPER ADMIN' : `${user.score || 0} PTS`}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                className="btn-secondary"
+                style={{ padding: '6px 10px' }}
+                onClick={handleLogout}
+                title="Sign out"
+                id="btn-nav-logout"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                className="btn-secondary"
+                onClick={() => handleNavigate('login')}
+                id="btn-nav-signin"
+                style={{
+                  fontSize: '13px',
+                  padding: '7px 14px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <LogIn size={14} />
+                <span>Sign In</span>
+              </button>
+
+              <button
+                className="btn-nav-register-highlight"
+                onClick={() => handleNavigate('register')}
+                id="btn-nav-register"
+                style={{
+                  fontSize: '13px',
+                  padding: '7px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <GraduationCap size={15} />
+                <span>Register</span>
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Navigation Drawer Toggle */}
+          <button
+            className="mobile-nav-toggle btn-secondary"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{
+              display: 'none',
+              padding: '6px 10px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '6px'
+            }}
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div style={{
+          position: 'sticky',
+          top: '64px',
+          left: 0,
+          right: 0,
+          zIndex: 49,
+          background: '#09090b',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          boxShadow: '0 12px 24px rgba(0, 0, 0, 0.8)'
+        }}>
+          {isStudent && (
+            <button
+              className={`nav-item ${activePage === 'student-dashboard' ? 'active' : ''}`}
+              onClick={() => handleNavigate('student-dashboard')}
+              style={{ padding: '10px 14px', fontSize: '14px', width: '100%', justifyContent: 'flex-start' }}
+            >
+              <GraduationCap size={16} /> Student Dashboard
+            </button>
+          )}
+
+          {isAdmin && (
+            <>
+              <button
+                className={`nav-item ${activePage === 'admin-dashboard' ? 'active' : ''}`}
+                onClick={() => handleNavigate('admin-dashboard')}
+                style={{ padding: '10px 14px', fontSize: '14px', width: '100%', justifyContent: 'flex-start' }}
+              >
+                <Shield size={16} /> Super Admin Dashboard
+              </button>
+              <button
+                className={`nav-item ${activePage === 'student-dashboard' ? 'active' : ''}`}
+                onClick={() => handleNavigate('student-dashboard')}
+                style={{ padding: '10px 14px', fontSize: '14px', width: '100%', justifyContent: 'flex-start' }}
+              >
+                <Cpu size={16} /> Challenge Arena
+              </button>
+            </>
+          )}
+
+          <button
+            className={`nav-item ${activePage === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => handleNavigate('leaderboard')}
+            style={{ padding: '10px 14px', fontSize: '14px', width: '100%', justifyContent: 'flex-start' }}
+          >
+            <Award size={16} /> Leaderboard
+          </button>
+
+          <button
+            className={`nav-item ${activePage === 'docs' ? 'active' : ''}`}
+            onClick={() => handleNavigate('docs')}
+            style={{ padding: '10px 14px', fontSize: '14px', width: '100%', justifyContent: 'flex-start' }}
+          >
+            <BookOpen size={16} /> PLC Cheatsheet
+          </button>
+        </div>
+      )}
+    </>
   );
 }

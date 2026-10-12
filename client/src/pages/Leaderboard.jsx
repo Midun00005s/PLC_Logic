@@ -42,7 +42,7 @@ export default function Leaderboard() {
           alignItems: 'center',
           gap: '8px',
           background: 'var(--bg-card)',
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border-muted)',
           color: 'var(--text-primary)',
           padding: '4px 14px',
           borderRadius: '20px',
@@ -114,7 +114,7 @@ export default function Leaderboard() {
                       <span style={{ fontSize: '18px' }}>{item.avatar || '⚡'}</span>
                       <div>
                         <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                          {item.name} {isCurrentUser && <span style={{ fontSize: '11px', color: 'var(--live-wire)', fontWeight: 'normal' }}>(You)</span>}
+                          {item.name} {isCurrentUser && <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>(You)</span>}
                         </div>
                       </div>
                     </div>
@@ -138,7 +138,7 @@ export default function Leaderboard() {
                     {item.solved}
                   </td>
 
-                  <td style={{ padding: '14px 20px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: '#10b981', fontSize: '15px' }}>
+                  <td style={{ padding: '14px 20px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '15px' }}>
                     {item.score} <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>PTS</span>
                   </td>
                 </tr>

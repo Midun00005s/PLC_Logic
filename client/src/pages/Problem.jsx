@@ -226,7 +226,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh', color: 'var(--text-muted)' }}>
         <div style={{ textAlign: 'center' }}>
-          <Cpu size={40} className="spin-active" style={{ margin: '0 auto 16px auto', color: 'var(--plc-cyan)' }} />
+          <Cpu size={40} className="spin-active" style={{ margin: '0 auto 16px auto', color: 'var(--text-primary)' }} />
           <div>Loading PLC Logic Problem & Specifications...</div>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 fontWeight: '600',
                 color: leftTab === 'problem' ? 'var(--text-primary)' : 'var(--text-muted)',
                 borderBottom: leftTab === 'problem' ? '2px solid var(--text-primary)' : 'none',
-                background: leftTab === 'problem' ? 'var(--bg-surface)' : 'transparent',
+                background: leftTab === 'problem' ? 'var(--bg-card-hover)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -373,7 +373,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 fontWeight: '600',
                 color: leftTab === 'pins' ? 'var(--text-primary)' : 'var(--text-muted)',
                 borderBottom: leftTab === 'pins' ? '2px solid var(--text-primary)' : 'none',
-                background: leftTab === 'pins' ? 'var(--bg-surface)' : 'transparent',
+                background: leftTab === 'pins' ? 'var(--bg-card-hover)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

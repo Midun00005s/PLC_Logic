@@ -6,7 +6,7 @@ export default function Docs() {
     <div style={{ flex: 1, padding: '36px 28px', maxWidth: '960px', margin: '0 auto', width: '100%' }}>
       {/* Title */}
       <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-muted)', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
           <BookOpen size={12} />
           IEC 61131-3 REFERENCE GUIDE
         </div>
@@ -49,12 +49,12 @@ export default function Docs() {
         {/* Coils Section */}
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={18} color="#38bdf8" /> Output Coils
+            <Layers size={18} color="var(--text-primary)" /> Output Coils
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
             <div style={{ background: 'var(--bg-card)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
                 —( )— Standard Coil
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -63,7 +63,7 @@ export default function Docs() {
             </div>
 
             <div style={{ background: 'var(--bg-card)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: '#c084fc', marginBottom: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
                 —(S)— Set / Latch
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -72,7 +72,7 @@ export default function Docs() {
             </div>
 
             <div style={{ background: 'var(--bg-card)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: '#fb923c', marginBottom: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
                 —(R)— Reset / Unlatch
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -85,7 +85,7 @@ export default function Docs() {
         {/* 3-Wire Seal-in Pattern */}
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Cpu size={18} color="#10b981" /> Industrial 3-Wire Seal-in Latch Circuit
+            <Cpu size={18} color="var(--text-primary)" /> Industrial 3-Wire Seal-in Latch Circuit
           </h2>
 
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px' }}>
@@ -93,14 +93,14 @@ export default function Docs() {
           </p>
 
           <div style={{
-            background: '#070a10',
+            background: 'var(--bg-card)',
             border: '1px solid var(--border-subtle)',
             borderRadius: '8px',
             padding: '16px',
             fontFamily: 'var(--font-mono)',
             fontSize: '12px',
             lineHeight: 1.8,
-            color: '#94a3b8'
+            color: 'var(--text-primary)'
           }}>
             <div>|───+──[ NO X0: Start ]──+──[/ NC X1: Stop ]──[/ NC X2: Overload ]──( Y0: Motor )──|</div>
             <div>|   |                    |                                                            |</div>
@@ -111,12 +111,12 @@ export default function Docs() {
         {/* Timers & Counters */}
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={18} color="#f59e0b" /> Timers (TON) & Counters (CTU)
+            <Clock size={18} color="var(--text-primary)" /> Timers (TON) & Counters (CTU)
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '6px' }}>
                 [TON T0 PRE:3000ms]
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>

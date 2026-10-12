@@ -526,7 +526,7 @@ export default function LadderEditor({
         }}>
           {/* Left Menus & Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', color: '#0284c7' }}>
               <FileCode size={14} />
               <span>ROUTINE: MainRoutine [LAD]</span>
             </div>

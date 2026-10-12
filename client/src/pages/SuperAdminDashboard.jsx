@@ -242,9 +242,9 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(139, 92, 246, 0.2)',
-              color: '#c084fc',
-              border: '1px solid rgba(139, 92, 246, 0.4)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-muted)',
               padding: '4px 12px',
               borderRadius: '20px',
               fontSize: '11px',
@@ -280,7 +280,6 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
                 className="btn-primary"
                 onClick={handleCreateNew}
                 id="btn-superadmin-create-problem"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#fff', border: 'none' }}
               >
                 <Plus size={16} />
                 <span>Create New Problem</span>
@@ -343,14 +342,14 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Evaluated Submissions</span>
-            <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '6px', borderRadius: '8px', color: '#10b981' }}>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-muted)', padding: '6px', borderRadius: '8px', color: 'var(--text-primary)' }}>
               <FileText size={16} />
             </div>
           </div>
           <div style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
             {allSubmissions.length} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>runs</span>
           </div>
-          <div style={{ fontSize: '11.5px', color: '#10b981', marginTop: '4px' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             Accepted: {allSubmissions.filter(s => s.isAccepted).length} solutions
           </div>
         </div>
@@ -358,11 +357,11 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Simulation Engine</span>
-            <div style={{ background: 'rgba(245, 158, 11, 0.15)', padding: '6px', borderRadius: '8px', color: '#f59e0b' }}>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-muted)', padding: '6px', borderRadius: '8px', color: 'var(--text-primary)' }}>
               <Activity size={16} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: '800', color: '#10b981' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)' }}>
             ONLINE
           </div>
           <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -379,8 +378,8 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
             padding: '10px 18px',
             fontSize: '14px',
             fontWeight: '600',
-            color: activeTab === 'problems' ? '#c084fc' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'problems' ? '2px solid #c084fc' : '2px solid transparent',
+            color: activeTab === 'problems' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'problems' ? '2px solid var(--text-primary)' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
@@ -397,8 +396,8 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
             padding: '10px 18px',
             fontSize: '14px',
             fontWeight: '600',
-            color: activeTab === 'students' ? '#c084fc' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'students' ? '2px solid #c084fc' : '2px solid transparent',
+            color: activeTab === 'students' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'students' ? '2px solid var(--text-primary)' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
@@ -415,8 +414,8 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
             padding: '10px 18px',
             fontSize: '14px',
             fontWeight: '600',
-            color: activeTab === 'audit' ? '#c084fc' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'audit' ? '2px solid #c084fc' : '2px solid transparent',
+            color: activeTab === 'audit' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'audit' ? '2px solid var(--text-primary)' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
@@ -433,8 +432,8 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
             padding: '10px 18px',
             fontSize: '14px',
             fontWeight: '600',
-            color: activeTab === 'engine' ? '#c084fc' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'engine' ? '2px solid #c084fc' : '2px solid transparent',
+            color: activeTab === 'engine' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'engine' ? '2px solid var(--text-primary)' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
@@ -452,12 +451,12 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
           {isEditing && editingProblem ? (
             /* Problem Editor Form */
             <form onSubmit={handleSaveProblem} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsEditing(false)}>
                   <ArrowLeft size={14} /> Back to Problem Catalog
                 </button>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button type="submit" className="btn-primary" id="btn-save-problem" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none' }}>
+                  <button type="submit" className="btn-primary" id="btn-save-problem">
                     <Save size={14} /> Save Benchmark & Test Suites
                   </button>
                 </div>

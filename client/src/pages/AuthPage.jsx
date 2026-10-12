@@ -108,12 +108,12 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             boxShadow: 'var(--shadow-md)'
           }}>
             <div className="brand-logo-badge" style={{ width: '24px', height: '24px', borderRadius: '6px' }}>
-              <Zap size={14} fill="#000" />
+              <Zap size={14} fill="currentColor" stroke="currentColor" />
             </div>
             <span style={{ fontFamily: 'var(--font-heading)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-primary)' }}>
               PLC LOGIC ARENA
             </span>
-            <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', background: 'var(--bg-card)', border: '1px solid var(--border-muted)', padding: '2px 6px', borderRadius: '10px' }}>
               v2.4
             </span>
           </div>
@@ -174,7 +174,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
               }}
               id="tab-login-mode"
             >
-              <Lock size={14} color="currentColor" />
+              <Lock size={14} color={mode === 'login' ? 'var(--text-primary)' : 'currentColor'} />
               <span>Sign In</span>
             </button>
 
@@ -198,7 +198,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
               }}
               id="tab-register-mode"
             >
-              <GraduationCap size={15} color="currentColor" />
+              <GraduationCap size={15} color={mode === 'register' ? 'var(--text-primary)' : 'currentColor'} />
               <span>Register as Student</span>
             </button>
           </div>
@@ -364,8 +364,8 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 </div>
 
                 <div style={{
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-muted)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '10px 14px',
                   marginBottom: '20px',
@@ -373,9 +373,9 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                   alignItems: 'center',
                   gap: '10px'
                 }}>
-                  <GraduationCap size={18} color="var(--live-wire)" />
+                  <GraduationCap size={18} color="var(--text-primary)" />
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Assigned Role: <strong style={{ color: 'var(--live-wire)' }}>Student Competitor</strong>
+                    Assigned Role: <strong style={{ color: 'var(--text-primary)' }}>Student Competitor</strong>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grants access to Student Dashboard, PLC Virtual Execution & Leaderboard.</div>
                   </div>
                 </div>

@@ -47,13 +47,13 @@ export default function TestResultsPanel({
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      background: '#090d16',
+      background: 'var(--bg-surface)',
       borderTop: '1px solid var(--border-subtle)'
     }}>
       {/* Top Test Control Bar */}
       <div style={{
         padding: '10px 16px',
-        background: 'var(--bg-surface)',
+        background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
@@ -63,7 +63,7 @@ export default function TestResultsPanel({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}>
-            <Terminal size={15} color="var(--plc-cyan)" />
+            <Terminal size={15} color="var(--text-primary)" />
             <span>Test Bench & Output Verification</span>
           </div>
 
@@ -181,7 +181,7 @@ export default function TestResultsPanel({
                   justifyContent: 'space-between',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                   background: selectedCaseIdx === idx ? 'var(--bg-card)' : 'transparent',
-                  borderLeft: selectedCaseIdx === idx ? '3px solid var(--plc-cyan)' : '3px solid transparent',
+                  borderLeft: selectedCaseIdx === idx ? '3px solid var(--text-primary)' : '3px solid transparent',
                   textAlign: 'left'
                 }}
               >
