@@ -18,7 +18,8 @@ export default function DataFilesModal({
   initialFile = 'T4',
   plcState = null,
   problemInputs = [],
-  problemOutputs = []
+  problemOutputs = [],
+  problemMemory = []
 }) {
   const [activeFile, setActiveFile] = useState(initialFile);
   const [radix, setRadix] = useState('DEC'); // 'DEC' | 'HEX' | 'BIN'
@@ -90,10 +91,11 @@ export default function DataFilesModal({
   // Bit Memory rows (M0..M7 / B3:0/0..B3:0/7)
   const bitRows = ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'].map((mKey, idx) => {
     const isHigh = Boolean(memory[mKey]);
+    const pMem = problemMemory.find(m => m.address === mKey);
     return {
       address: mKey,
       rackAddr: `B3:0/${idx}`,
-      tag: `INTERNAL_AUX_${idx}`,
+      tag: pMem?.name || `INTERNAL_AUX_${idx}`,
       state: isHigh ? '1' : '0',
       bitVal: isHigh ? 1 : 0
     };

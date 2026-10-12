@@ -366,6 +366,92 @@ console.log('\n--- 13. Database Multi-Challenge Dynamic Loading ---');
   });
 }
 
+// 14. Elevator Overload Protection & Direction Control Verification
+console.log('\n--- 14. Elevator Overload Protection & Direction Control (prob-1791828405933) ---');
+{
+  const elevatorProb = db.getProblemById('prob-1791828405933', true);
+  assert(elevatorProb !== null, 'Elevator challenge prob-1791828405933 exists in database');
+
+  // I/O Mapping Validation
+  const inputMap = {};
+  (elevatorProb.inputs || []).forEach(inp => { inputMap[inp.address] = inp.name; });
+  assert(inputMap.X0 === 'LOAD_OK', 'Elevator X0 maps to LOAD_OK');
+  assert(inputMap.X1 === 'UP_PB', 'Elevator X1 maps to UP_PB');
+  assert(inputMap.X2 === 'DOWN_PB', 'Elevator X2 maps to DOWN_PB');
+  assert(inputMap.X3 === 'STOP_PB', 'Elevator X3 maps to STOP_PB');
+  assert(inputMap.X4 === 'RESET_PB', 'Elevator X4 maps to RESET_PB');
+
+  const outputMap = {};
+  (elevatorProb.outputs || []).forEach(out => { outputMap[out.address] = out.name; });
+  assert(outputMap.Y0 === 'LIFT_UP', 'Elevator Y0 maps to LIFT_UP');
+  assert(outputMap.Y1 === 'LIFT_DOWN', 'Elevator Y1 maps to LIFT_DOWN');
+  assert(outputMap.Y2 === 'OVERLOAD_LAMP', 'Elevator Y2 maps to OVERLOAD_LAMP');
+
+  const memoryMap = {};
+  (elevatorProb.memory || []).forEach(mem => { memoryMap[mem.address] = mem.name; });
+  assert(memoryMap.M0 === 'OVERLOAD_FAULT', 'Elevator M0 maps to OVERLOAD_FAULT');
+  assert(memoryMap.M1 === 'UP_LATCH', 'Elevator M1 maps to UP_LATCH');
+  assert(memoryMap.M2 === 'DOWN_LATCH', 'Elevator M2 maps to DOWN_LATCH');
+
+  // Verify other challenges are NOT affected (preserves generic/specific mappings per problem)
+  const motorProb = db.getProblemById('prob-01', true);
+  const motorInpMap = {};
+  (motorProb.inputs || []).forEach(inp => { motorInpMap[inp.address] = inp.name; });
+  assert(motorInpMap.X0 === 'START_PB', 'Other challenges preserve original X0 (START_PB)');
+  assert(motorInpMap.X1 === 'STOP_PB', 'Other challenges preserve original X1 (STOP_PB)');
+
+  // Validate elevator ladder program schema
+  const schemaRes = validateLadder(elevatorProb.starterLadder);
+  assert(schemaRes.valid === true, 'Elevator starter ladder passes IEC 61131-3 schema validation');
+
+  // Evaluate Public Test Suite
+  const publicRes = runTestSuite(elevatorProb.starterLadder, elevatorProb.publicTests);
+  assert(publicRes.passed === true, 'Elevator ladder passes 100% of public test suite');
+  assert(publicRes.scorePercent === 100, 'Elevator public score is 100%');
+  assert(publicRes.passedCount === elevatorProb.publicTests.length, `All ${elevatorProb.publicTests.length} public tests passed`);
+
+  // Evaluate Hidden Test Suite
+  const hiddenRes = runTestSuite(elevatorProb.starterLadder, elevatorProb.hiddenTests);
+  assert(hiddenRes.passed === true, 'Elevator ladder passes 100% of hidden test suite');
+  assert(hiddenRes.scorePercent === 100, 'Elevator hidden score is 100%');
+  assert(hiddenRes.passedCount === elevatorProb.hiddenTests.length, `All ${elevatorProb.hiddenTests.length} hidden tests passed`);
+
+  // Detailed Step-by-Step Behavioral Verification using VirtualPLC Engine
+  const plc = new VirtualPLC();
+
+  // Test: Safe load allows UP
+  plc.setInputs({ X0: true, X1: true, X2: false, X3: false, X4: false });
+  plc.scan(elevatorProb.starterLadder);
+  assert(plc.outputs.Y0 === true && plc.outputs.Y1 === false && plc.outputs.Y2 === false, 'Safe load allows UP movement');
+
+  // Test: Overload immediately stops movement and latches fault M0 & lamp Y2
+  plc.setInputs({ X0: false, X1: false, X2: false, X3: false, X4: false });
+  plc.scan(elevatorProb.starterLadder);
+  assert(plc.outputs.Y0 === false, 'Overload immediately turns OFF UP movement');
+  assert(plc.outputs.Y1 === false, 'Overload immediately turns OFF DOWN movement');
+  assert(plc.memory.M0 === true, 'Overload latches fault bit M0');
+  assert(plc.outputs.Y2 === true, 'Overload turns ON indicator lamp Y2');
+
+  // Test: Unsafe reset attempt (X4 pressed while X0 remains false) fails to clear M0
+  plc.setInputs({ X0: false, X1: false, X2: false, X3: false, X4: true });
+  plc.scan(elevatorProb.starterLadder);
+  assert(plc.memory.M0 === true, 'Reset button cannot clear overload while load is unsafe (X0 false)');
+  assert(plc.outputs.Y2 === true, 'Overload lamp remains ON during unsafe reset attempt');
+
+  // Test: Load safe + Reset clears fault M0 without restarting movement
+  plc.setInputs({ X0: true, X1: false, X2: false, X3: false, X4: true });
+  plc.scan(elevatorProb.starterLadder);
+  assert(plc.memory.M0 === false, 'Reset button clears overload fault when load is safe (X0 true)');
+  assert(plc.outputs.Y2 === false, 'Overload lamp turns OFF after valid reset');
+  assert(plc.outputs.Y0 === false && plc.outputs.Y1 === false, 'Reset NEVER automatically restarts movement');
+
+  // Test: Simultaneous UP and DOWN commands are mutually inhibited
+  plc.setInputs({ X0: true, X1: true, X2: true, X3: false, X4: false });
+  plc.scan(elevatorProb.starterLadder);
+  assert(plc.outputs.Y0 === false && plc.outputs.Y1 === false, 'Simultaneous UP and DOWN requests are both inhibited');
+}
+
 console.log('\n============================================================');
 console.log(`✅ ALL ${passedTestsCount} / ${totalTestsCount} REGRESSION TESTS PASSED SUCCESSFULLY!`);
 console.log('============================================================\n');
+

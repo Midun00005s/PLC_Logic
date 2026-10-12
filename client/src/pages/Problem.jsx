@@ -864,9 +864,34 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                   </table>
                 </div>
 
+                {problem.memory && problem.memory.length > 0 && (
+                  <div>
+                    <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      Internal Memory Allocation (B3 / M Bits)
+                    </h4>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <tbody>
+                        {problem.memory.map(mem => (
+                          <tr key={mem.address} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <td style={{ padding: '6px 4px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: '#f59e0b' }}>
+                              {mem.address}
+                            </td>
+                            <td style={{ padding: '6px 4px', fontWeight: '500', color: 'var(--text-primary)' }}>
+                              {mem.name}
+                            </td>
+                            <td style={{ padding: '6px 4px', color: 'var(--text-dim)', fontSize: '11px' }}>
+                              {mem.description || 'Internal Bit Flag'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
                 <div>
                   <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    Internal Memory & Registers
+                    Standard Registers & Function Blocks
                   </h4>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                     <div>• <strong>M0..M15:</strong> Internal Bit Relays (auxiliary flags, latches)</div>
@@ -979,6 +1004,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               setLadder={setLadder}
               problemInputs={problem.inputs || []}
               problemOutputs={problem.outputs || []}
+              problemMemory={problem.memory || []}
               rungStates={rungStates}
               plcState={plcState}
               isScanning={isScanning}

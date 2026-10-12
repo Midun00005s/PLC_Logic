@@ -40,7 +40,8 @@ export default function LadderRung({
   const rungNumberStr = String(rIdx).padStart(4, '0');
 
   // Helper to get alias / tag for an address
-  const getTagForAddress = (addr) => {
+  const getTagForAddress = (addr, explicitTag) => {
+    if (explicitTag) return explicitTag;
     if (!addr) return '';
     const match = allAddresses.find(a => a.address === addr);
     if (match) {
@@ -364,7 +365,7 @@ export default function LadderRung({
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', zIndex: 1 }}>
                                 {branchElements.map((subEl, subIdx) => {
                                   const conducts = isContactConducting(subEl.type, subEl.address);
-                                  const tag = getTagForAddress(subEl.address);
+                                  const tag = getTagForAddress(subEl.address, subEl.tag);
 
                                   return (
                                     <div
@@ -468,7 +469,7 @@ export default function LadderRung({
 
                 // STANDARD SERIES CONTACT (NO or NC)
                 const conducts = isContactConducting(el.type, el.address);
-                const tag = getTagForAddress(el.address);
+                const tag = getTagForAddress(el.address, el.tag);
 
                 return (
                   <div
@@ -584,7 +585,7 @@ export default function LadderRung({
             {outputElements.map((el) => {
               const origIdx = el.originalIdx;
               const isEnergized = isRungEnergized;
-              const tag = getTagForAddress(el.address);
+              const tag = getTagForAddress(el.address, el.tag);
 
               // 1. TON TIMER BLOCK
               if (el.type === 'TON') {

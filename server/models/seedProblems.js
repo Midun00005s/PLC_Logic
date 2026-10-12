@@ -600,5 +600,255 @@ Implement a Category 3 / SIL 2 safety monitoring circuit. For human safety, an i
         ]
       }
     ]
+  },
+  {
+    id: "prob-1791828405933",
+    title: "Elevator Overload Protection and Direction Control",
+    difficulty: "Hard",
+    category: "Process Automation",
+    tag: "Factory Automation",
+    description: `### Industrial Problem Statement
+Design a professional PLC ladder-logic control program for an industrial freight and passenger elevator with active overload protection and bidirectional movement interlocking.
+
+### Operational Requirements:
+1. **Load Verification**: Movement UP (\`Y0\`) or DOWN (\`Y1\`) is permitted only when passenger load is strictly below 200 kg (\`X0\` = \`true\`) and no overload fault (\`M0\`) is active.
+2. **Instant Overload Trip**: If the elevator is moving and the load reaches 200 kg or greater (\`X0\` = \`false\`), both movement commands (\`Y0\`, \`Y1\`) must de-energize immediately.
+3. **Latched Overload Fault**: When overload occurs (\`X0\` drops to \`false\`), latch internal fault flag \`M0\` (\`OVERLOAD_FAULT\`) and energize indicator lamp \`Y2\` (\`OVERLOAD_LAMP\`).
+4. **Safety Reset Interlock**: Fault \`M0\` can only be cleared if load is safe (\`X0\` = \`true\`) AND the operator presses Reset (\`X4\` = \`true\`). Resetting must **never** automatically restart elevator movement.
+5. **Direction Interlocking**: UP (\`Y0\`) and DOWN (\`Y1\`) must be mutually interlocked so they can never energize simultaneously. Pressing both UP and DOWN at once inhibits movement.
+6. **Stop Command**: Pressing STOP (\`X3\`) immediately halts any active movement.
+
+### I/O Allocation Map:
+- \`X0\` (**LOAD_OK**): \`true\` only when load is strictly below 200 kg
+- \`X1\` (**UP_PB**): UP push button
+- \`X2\` (**DOWN_PB**): DOWN push button
+- \`X3\` (**STOP_PB**): STOP push button
+- \`X4\` (**RESET_PB**): Reset push button
+- \`Y0\` (**LIFT_UP**): UP movement command
+- \`Y1\` (**LIFT_DOWN**): DOWN movement command
+- \`Y2\` (**OVERLOAD_LAMP**): Overload indicator lamp
+- \`M0\` (**OVERLOAD_FAULT**): Latched overload fault
+- \`M1\` (**UP_LATCH**): Retained UP request
+- \`M2\` (**DOWN_LATCH**): Retained DOWN request`,
+    inputs: [
+      { address: "X0", name: "LOAD_OK", description: "Load OK (< 200 kg safe threshold)", type: "toggle" },
+      { address: "X1", name: "UP_PB", description: "UP Push Button (momentary)", type: "momentary" },
+      { address: "X2", name: "DOWN_PB", description: "DOWN Push Button (momentary)", type: "momentary" },
+      { address: "X3", name: "STOP_PB", description: "STOP Push Button (momentary)", type: "momentary" },
+      { address: "X4", name: "RESET_PB", description: "Reset Push Button (momentary)", type: "momentary" }
+    ],
+    outputs: [
+      { address: "Y0", name: "LIFT_UP", description: "UP Movement Command (Contactor)", color: "#10b981" },
+      { address: "Y1", name: "LIFT_DOWN", description: "DOWN Movement Command (Contactor)", color: "#38bdf8" },
+      { address: "Y2", name: "OVERLOAD_LAMP", description: "Overload Indicator Lamp", color: "#ef4444" }
+    ],
+    memory: [
+      { address: "M0", name: "OVERLOAD_FAULT", description: "Latched Overload Fault" },
+      { address: "M1", name: "UP_LATCH", description: "Retained UP Request" },
+      { address: "M2", name: "DOWN_LATCH", description: "Retained DOWN Request" }
+    ],
+    starterLadder: {
+      rungs: [
+        {
+          id: "rung-1",
+          comment: "Overload Detection & Fault Latch: When load threshold drops (X0=0), latch fault M0",
+          elements: [
+            { type: "NC", address: "X0", tag: "LOAD_OK" },
+            { type: "SET", address: "M0", tag: "OVERLOAD_FAULT" }
+          ]
+        },
+        {
+          id: "rung-2",
+          comment: "Overload Fault Reset: When load is safe (X0=1) and operator presses Reset (X4=1), unlatch M0",
+          elements: [
+            { type: "NO", address: "X0", tag: "LOAD_OK" },
+            { type: "NO", address: "X4", tag: "RESET_PB" },
+            { type: "RESET", address: "M0", tag: "OVERLOAD_FAULT" }
+          ]
+        },
+        {
+          id: "rung-3",
+          comment: "Overload Indicator Lamp: Energizes whenever overload fault M0 is latched",
+          elements: [
+            { type: "NO", address: "M0", tag: "OVERLOAD_FAULT" },
+            { type: "COIL", address: "Y2", tag: "OVERLOAD_LAMP" }
+          ]
+        },
+        {
+          id: "rung-4",
+          comment: "LIFT UP Command: Sealed-in UP request with DOWN interlock, STOP, safe load (X0), and no fault (M0)",
+          elements: [
+            {
+              type: "BRANCH",
+              branches: [
+                [{ type: "NO", address: "X1", tag: "UP_PB" }],
+                [{ type: "NO", address: "Y0", tag: "LIFT_UP" }]
+              ]
+            },
+            { type: "NC", address: "X2", tag: "DOWN_PB" },
+            { type: "NC", address: "Y1", tag: "LIFT_DOWN" },
+            { type: "NC", address: "X3", tag: "STOP_PB" },
+            { type: "NO", address: "X0", tag: "LOAD_OK" },
+            { type: "NC", address: "M0", tag: "OVERLOAD_FAULT" },
+            { type: "COIL", address: "Y0", tag: "LIFT_UP" }
+          ]
+        },
+        {
+          id: "rung-5",
+          comment: "LIFT DOWN Command: Sealed-in DOWN request with UP interlock, STOP, safe load (X0), and no fault (M0)",
+          elements: [
+            {
+              type: "BRANCH",
+              branches: [
+                [{ type: "NO", address: "X2", tag: "DOWN_PB" }],
+                [{ type: "NO", address: "Y1", tag: "LIFT_DOWN" }]
+              ]
+            },
+            { type: "NC", address: "X1", tag: "UP_PB" },
+            { type: "NC", address: "Y0", tag: "LIFT_UP" },
+            { type: "NC", address: "X3", tag: "STOP_PB" },
+            { type: "NO", address: "X0", tag: "LOAD_OK" },
+            { type: "NC", address: "M0", tag: "OVERLOAD_FAULT" },
+            { type: "COIL", address: "Y1", tag: "LIFT_DOWN" }
+          ]
+        }
+      ]
+    },
+    publicTests: [
+      {
+        name: "Test 1: Allow UP Movement Below 200 kg",
+        steps: [
+          {
+            step: 1,
+            description: "Load is 150 kg and the UP button is pressed",
+            inputs: { X0: true, X1: true, X2: false, X3: false, X4: false },
+            expected: { Y0: true, Y1: false, Y2: false }
+          },
+          {
+            step: 2,
+            description: "UP button is released; retained movement continues",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: true, Y1: false, Y2: false }
+          }
+        ]
+      },
+      {
+        name: "Test 2: Allow DOWN Movement Below 200 kg",
+        steps: [
+          {
+            step: 1,
+            description: "Load is 180 kg and the DOWN button is pressed",
+            inputs: { X0: true, X1: false, X2: true, X3: false, X4: false },
+            expected: { Y0: false, Y1: true, Y2: false }
+          },
+          {
+            step: 2,
+            description: "DOWN button is released; retained movement continues",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: false, Y1: true, Y2: false }
+          }
+        ]
+      },
+      {
+        name: "Test 3: Overload Stops Movement and Latches Fault",
+        steps: [
+          {
+            step: 1,
+            description: "Start moving UP with a safe load",
+            inputs: { X0: true, X1: true, X2: false, X3: false, X4: false },
+            expected: { Y0: true, Y1: false, Y2: false }
+          },
+          {
+            step: 2,
+            description: "Load reaches 200 kg or greater",
+            inputs: { X0: false, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: true }
+          },
+          {
+            step: 3,
+            description: "Load returns below 200 kg without pressing Reset",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: true }
+          }
+        ]
+      },
+      {
+        name: "Test 4: Stop and Direction Interlocking",
+        steps: [
+          {
+            step: 1,
+            description: "Press UP and DOWN together from the stopped state",
+            inputs: { X0: true, X1: true, X2: true, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: false }
+          },
+          {
+            step: 2,
+            description: "Press UP while STOP is also pressed",
+            inputs: { X0: true, X1: true, X2: false, X3: true, X4: false },
+            expected: { Y0: false, Y1: false, Y2: false }
+          }
+        ]
+      }
+    ],
+    hiddenTests: [
+      {
+        name: "Hidden Test 1: Reset Cannot Clear an Active Overload",
+        steps: [
+          {
+            step: 1,
+            description: "Load reaches 200 kg or greater while DOWN is requested",
+            inputs: { X0: false, X1: false, X2: true, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: true }
+          },
+          {
+            step: 2,
+            description: "Reset is pressed while the load remains unsafe",
+            inputs: { X0: false, X1: false, X2: false, X3: false, X4: true },
+            expected: { Y0: false, Y1: false, Y2: true }
+          },
+          {
+            step: 3,
+            description: "Load becomes safe, but Reset is released",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: true }
+          },
+          {
+            step: 4,
+            description: "Operator resets after the load becomes safe",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: true },
+            expected: { Y0: false, Y1: false, Y2: false }
+          }
+        ]
+      },
+      {
+        name: "Hidden Test 2: No Automatic Restart and No Simultaneous Movement",
+        steps: [
+          {
+            step: 1,
+            description: "Start moving UP with a safe load",
+            inputs: { X0: true, X1: true, X2: false, X3: false, X4: false },
+            expected: { Y0: true, Y1: false, Y2: false }
+          },
+          {
+            step: 2,
+            description: "Load becomes unsafe and triggers the fault",
+            inputs: { X0: false, X1: false, X2: false, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: true }
+          },
+          {
+            step: 3,
+            description: "Load becomes safe and fault is reset",
+            inputs: { X0: true, X1: false, X2: false, X3: false, X4: true },
+            expected: { Y0: false, Y1: false, Y2: false }
+          },
+          {
+            step: 4,
+            description: "UP and DOWN are requested simultaneously",
+            inputs: { X0: true, X1: true, X2: true, X3: false, X4: false },
+            expected: { Y0: false, Y1: false, Y2: false }
+          }
+        ]
+      }
+    ]
   }
 ];

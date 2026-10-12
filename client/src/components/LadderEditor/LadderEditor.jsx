@@ -37,6 +37,7 @@ export default function LadderEditor({
   setLadder,
   problemInputs = [],
   problemOutputs = [],
+  problemMemory = [],
   rungStates = [],
   plcState = null,
   isScanning = true,
@@ -131,12 +132,23 @@ export default function LadderEditor({
         { address: 'Y2', name: 'Y2 (Buzzer)' }
       ];
 
-  const memoryAddresses = [
-    { address: 'M0', name: 'M0 (Aux Flag 0)' },
-    { address: 'M1', name: 'M1 (Aux Flag 1)' },
-    { address: 'M2', name: 'M2 (Aux Flag 2)' },
-    { address: 'M3', name: 'M3 (Aux Flag 3)' }
-  ];
+  const definedMemory = (problemMemory && problemMemory.length > 0)
+    ? problemMemory.map(m => ({ address: m.address, name: `${m.address} (${m.name})` }))
+    : [];
+
+  const defaultMemorySlots = ['M0', 'M1', 'M2', 'M3'];
+  const fallbackMemory = defaultMemorySlots
+    .filter(slot => !definedMemory.some(d => d.address === slot))
+    .map(slot => ({ address: slot, name: `${slot} (Aux Flag ${slot.replace('M', '')})` }));
+
+  const memoryAddresses = definedMemory.length > 0
+    ? [...definedMemory, ...fallbackMemory]
+    : [
+        { address: 'M0', name: 'M0 (Aux Flag 0)' },
+        { address: 'M1', name: 'M1 (Aux Flag 1)' },
+        { address: 'M2', name: 'M2 (Aux Flag 2)' },
+        { address: 'M3', name: 'M3 (Aux Flag 3)' }
+      ];
 
   const timerAddresses = [
     { address: 'T0', name: 'T0 (Timer 0)' },
@@ -1410,6 +1422,7 @@ export default function LadderEditor({
         plcState={plcState}
         problemInputs={problemInputs}
         problemOutputs={problemOutputs}
+        problemMemory={problemMemory}
       />
     </div>
   );

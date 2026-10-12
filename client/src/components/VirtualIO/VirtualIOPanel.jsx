@@ -448,6 +448,7 @@ export default function VirtualIOPanel({
             <div style={{ padding: '8px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
               {['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'].map(mKey => {
                 const isSet = Boolean(memory[mKey]);
+                const memDef = (problem?.memory || []).find(m => m.address === mKey);
                 return (
                   <div
                     key={mKey}
@@ -466,10 +467,16 @@ export default function VirtualIOPanel({
                       fontSize: '11px',
                       lineHeight: 1.2
                     }}
+                    title={memDef ? `${mKey}: ${memDef.name} - ${memDef.description || ''}` : `${mKey} Internal Relay`}
                   >
                     <span style={{ color: isSet ? '#10b981' : 'var(--text-secondary)', fontWeight: 'bold' }}>
                       {mKey}
                     </span>
+                    {memDef && (
+                      <span style={{ fontSize: '8px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '62px' }}>
+                        {memDef.name}
+                      </span>
+                    )}
                     <span style={{ fontSize: '11px', fontWeight: 'bold', color: isSet ? '#10b981' : 'var(--text-dim)', marginTop: '2px' }}>
                       {isSet ? '1' : '0'}
                     </span>

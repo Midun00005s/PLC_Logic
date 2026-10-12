@@ -22,14 +22,25 @@ export default function InstructionDialog({
   const [preset, setPreset] = useState(element.preset || (element.type === 'CTU' ? 5 : 3000));
   const [timeBase, setTimeBase] = useState('10ms'); // standard IEC time base
 
+  const getSymbolForAddress = (addr) => {
+    if (!addr) return '';
+    const match = allAddresses.find(a => a.address === addr);
+    if (match) {
+      const nameMatch = match.name.match(/\((.*?)\)/);
+      return nameMatch ? nameMatch[1] : match.name;
+    }
+    return '';
+  };
+
   useEffect(() => {
     if (element) {
       setType(element.type || 'NO');
-      setAddress(element.address || 'X0');
-      setCustomTag(element.tag || '');
+      const addr = element.address || 'X0';
+      setAddress(addr);
+      setCustomTag(element.tag || getSymbolForAddress(addr));
       setPreset(element.preset || (element.type === 'CTU' ? 5 : 3000));
     }
-  }, [element]);
+  }, [element, allAddresses]);
 
   // Determine current live value of this address
   const getLiveValue = (addr) => {
@@ -49,10 +60,40 @@ export default function InstructionDialog({
     if (type === 'TON') return a.address.startsWith('T');
     if (type === 'CTU') return a.address.startsWith('C');
     if (type === 'COIL' || type === 'SET') return a.address.startsWith('Y') || a.address.startsWith('M');
-    if (type === 'RESET') return a.address.startsWith('Y') || a.address.startsWith('M') || a.address.startsWith('C');
+    if (type === 'RESET') return a.address.startsWith('Y') || a.address.startsWith('M') || a.address.startsWith('C') || a.address.startsWith('T');
     // Contacts can read anything (inputs, outputs, bits, timer flags, counter flags)
     return true;
   });
+
+  const handleAddressChange = (newAddr) => {
+    setAddress(newAddr);
+    const sym = getSymbolForAddress(newAddr);
+    if (sym) {
+      setCustomTag(sym);
+    }
+  };
+
+  const handleTypeChange = (newT) => {
+    setType(newT);
+    let nextAddr = address;
+    if (newT === 'TON' && !address.startsWith('T')) {
+      const firstT = allAddresses.find(a => a.address.startsWith('T'));
+      nextAddr = firstT ? firstT.address : 'T0';
+    } else if (newT === 'CTU' && !address.startsWith('C')) {
+      const firstC = allAddresses.find(a => a.address.startsWith('C'));
+      nextAddr = firstC ? firstC.address : 'C0';
+    } else if ((newT === 'COIL' || newT === 'SET') && !address.startsWith('Y') && !address.startsWith('M')) {
+      const firstValid = allAddresses.find(a => a.address.startsWith('Y') || a.address.startsWith('M'));
+      nextAddr = firstValid ? firstValid.address : 'Y0';
+    } else if (newT === 'RESET' && !address.startsWith('Y') && !address.startsWith('M') && !address.startsWith('C') && !address.startsWith('T')) {
+      const firstValid = allAddresses.find(a => a.address.startsWith('Y') || a.address.startsWith('M') || a.address.startsWith('C'));
+      nextAddr = firstValid ? firstValid.address : 'M0';
+    }
+    if (nextAddr !== address) {
+      setAddress(nextAddr);
+      setCustomTag(getSymbolForAddress(nextAddr));
+    }
+  };
 
   const handleApply = () => {
     const updates = {
@@ -121,13 +162,7 @@ export default function InstructionDialog({
             </label>
             <select
               value={type}
-              onChange={(e) => {
-                const newT = e.target.value;
-                setType(newT);
-                if (newT === 'TON' && !address.startsWith('T')) setAddress('T0');
-                if (newT === 'CTU' && !address.startsWith('C')) setAddress('C0');
-                if ((newT === 'COIL' || newT === 'SET') && !address.startsWith('Y') && !address.startsWith('M')) setAddress('Y0');
-              }}
+              onChange={(e) => handleTypeChange(e.target.value)}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -182,7 +217,7 @@ export default function InstructionDialog({
 
             <select
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => handleAddressChange(e.target.value)}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -197,7 +232,7 @@ export default function InstructionDialog({
             >
               {filteredAddresses.map(a => (
                 <option key={a.address} value={a.address} style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
-                  {a.address} • {a.name}
+                  {a.name}
                 </option>
               ))}
             </select>
