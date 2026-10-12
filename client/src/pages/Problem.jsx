@@ -3,7 +3,7 @@ import LadderEditor from '../components/LadderEditor/LadderEditor';
 import VirtualIOPanel from '../components/VirtualIO/VirtualIOPanel';
 import TestResultsPanel from '../components/TestResults/TestResultsPanel';
 import { useAuth } from '../context/AuthContext';
-import { VirtualPLC } from '../../../server/plc/ladderEngine';
+import { VirtualPLC, validateLadder } from '../../../server/plc/ladderEngine';
 import {
   ArrowLeft,
   RotateCcw,
@@ -16,7 +16,14 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Sliders
+  Sliders,
+  Check,
+  Download,
+  Terminal,
+  Shield,
+  Activity,
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
@@ -36,9 +43,15 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   const [rungStates, setRungStates] = useState([]);
   const [plcState, setPlcState] = useState(null);
 
-  // Left sidebar tabs: 'problem' | 'pins'
+  // Left sidebar tabs: 'problem' | 'pins' | 'tests'
   const [leftTab, setLeftTab] = useState('problem');
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+
+  // Save / Restore & Validation State
+  const [savedToast, setSavedToast] = useState(null);
+  const [hasSavedProgram, setHasSavedProgram] = useState(false);
+  const [syntaxValidation, setSyntaxValidation] = useState({ valid: true, errors: [] });
+  const [showValidationModal, setShowValidationModal] = useState(false);
 
   // Test Execution State
   const [testData, setTestData] = useState(null);
@@ -49,8 +62,18 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
   const [isBottomCollapsed, setIsBottomCollapsed] = useState(false);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
 
-  // Virtual PLC instance ref for continuous high-speed simulation
+  // Virtual PLC instance ref for continuous simulation
   const plcRef = useRef(new VirtualPLC());
+
+  // Check saved program existence
+  const checkSavedStorage = (id) => {
+    try {
+      const saved = localStorage.getItem(`plc_program_${id}`);
+      setHasSavedProgram(Boolean(saved));
+    } catch {
+      setHasSavedProgram(false);
+    }
+  };
 
   // Load problem details
   useEffect(() => {
@@ -62,22 +85,22 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
         const data = await res.json();
         setProblem(data);
 
-        // Load starter ladder logic
-        if (data.starterLadder?.rungs?.length > 0) {
-          setLadder(JSON.parse(JSON.stringify(data.starterLadder)));
+        // Check for locally saved version first
+        const savedRaw = localStorage.getItem(`plc_program_${problemId}`);
+        if (savedRaw) {
+          try {
+            const parsedSaved = JSON.parse(savedRaw);
+            if (parsedSaved?.rungs?.length > 0) {
+              setLadder(parsedSaved);
+              setHasSavedProgram(true);
+            } else {
+              initStarter(data);
+            }
+          } catch {
+            initStarter(data);
+          }
         } else {
-          setLadder({
-            rungs: [
-              {
-                id: 'rung-1',
-                comment: 'Initial Rung',
-                elements: [
-                  { type: 'NO', address: data.inputs?.[0]?.address || 'X0' },
-                  { type: 'COIL', address: data.outputs?.[0]?.address || 'Y0' }
-                ]
-              }
-            ]
-          });
+          initStarter(data);
         }
 
         // Initialize inputs
@@ -86,16 +109,45 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           initialInp[inp.address] = false;
         });
         setInputs(initialInp);
+        checkSavedStorage(problemId);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
+
+    function initStarter(data) {
+      if (data.starterLadder?.rungs?.length > 0) {
+        setLadder(JSON.parse(JSON.stringify(data.starterLadder)));
+      } else {
+        setLadder({
+          rungs: [
+            {
+              id: 'rung-1',
+              comment: 'Initial Rung',
+              elements: [
+                { type: 'NO', address: data.inputs?.[0]?.address || 'X0' },
+                { type: 'COIL', address: data.outputs?.[0]?.address || 'Y0' }
+              ]
+            }
+          ]
+        });
+      }
+    }
+
     fetchProblem();
   }, [problemId]);
 
-  // Continuous Virtual PLC Scan Loop (Runs at ~20Hz = 50ms)
+  // Live syntax validation whenever ladder structure changes
+  useEffect(() => {
+    if (ladder) {
+      const v = validateLadder(ladder);
+      setSyntaxValidation(v);
+    }
+  }, [ladder]);
+
+  // Continuous Virtual PLC Scan Loop (~20Hz = 50ms)
   useEffect(() => {
     if (!isScanning) return;
 
@@ -157,6 +209,36 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
     setFault('NORMAL');
   };
 
+  // Save current ladder to localStorage
+  const handleSaveProgram = () => {
+    try {
+      localStorage.setItem(`plc_program_${problem.id}`, JSON.stringify(ladder));
+      setHasSavedProgram(true);
+      setSavedToast('Program saved to browser storage');
+      setTimeout(() => setSavedToast(null), 3000);
+    } catch (err) {
+      alert('Could not save program: ' + err.message);
+    }
+  };
+
+  // Restore saved ladder from localStorage
+  const handleRestoreProgram = () => {
+    try {
+      const raw = localStorage.getItem(`plc_program_${problem.id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.rungs) {
+          setLadder(parsed);
+          handleResetPlc();
+          setSavedToast('Restored saved program');
+          setTimeout(() => setSavedToast(null), 3000);
+        }
+      }
+    } catch (err) {
+      alert('Could not restore program: ' + err.message);
+    }
+  };
+
   // Revert ladder to starter template
   const handleRevertLadder = () => {
     if (!problem?.starterLadder) return;
@@ -181,7 +263,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       });
       const data = await res.json();
       setTestData(data);
-      setSubmissionData(null); // Clear previous submission view
+      setSubmissionData(null);
     } catch (err) {
       alert('Error running tests: ' + err.message);
     } finally {
@@ -227,7 +309,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh', color: 'var(--text-muted)' }}>
         <div style={{ textAlign: 'center' }}>
           <Cpu size={40} className="spin-active" style={{ margin: '0 auto 16px auto', color: 'var(--text-primary)' }} />
-          <div>Loading PLC Logic Problem & Specifications...</div>
+          <div>Loading Industrial PLC Challenge & Specifications...</div>
         </div>
       </div>
     );
@@ -248,7 +330,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
-      {/* Top Workspace Header Bar */}
+      {/* Top Professional Toolbar */}
       <div style={{
         height: '52px',
         background: 'var(--bg-surface)',
@@ -256,65 +338,127 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 16px'
+        padding: '0 16px',
+        gap: '12px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {/* Left: Problem Details & Breadcrumbs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
           <button
             onClick={onBack}
             className="btn-secondary"
-            style={{ padding: '5px 10px', fontSize: '12px' }}
+            style={{ padding: '5px 10px', fontSize: '12px', flexShrink: 0 }}
             title="Return to Problem Dashboard"
             id="btn-back-dashboard"
           >
             <ArrowLeft size={14} /> Problems
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+            <h2 style={{
+              fontSize: '14.5px',
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-heading)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
               {problem.title}
             </h2>
+
             <span style={{
-              fontSize: '11px',
+              fontSize: '10.5px',
               fontWeight: '600',
-              padding: '2px 8px',
+              padding: '2px 7px',
               borderRadius: '4px',
               background: problem.difficulty === 'Easy' ? 'rgba(16, 185, 129, 0.15)' : problem.difficulty === 'Medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
               color: problem.difficulty === 'Easy' ? '#10b981' : problem.difficulty === 'Medium' ? '#f59e0b' : '#ef4444',
-              border: problem.difficulty === 'Easy' ? '1px solid rgba(16, 185, 129, 0.3)' : problem.difficulty === 'Medium' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+              border: problem.difficulty === 'Easy' ? '1px solid rgba(16, 185, 129, 0.3)' : problem.difficulty === 'Medium' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+              flexShrink: 0
             }}>
               {problem.difficulty}
             </span>
+
+            {savedToast && (
+              <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <Check size={12} /> {savedToast}
+              </span>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Right Toolbar Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {/* Syntax Validation Status Indicator */}
           <button
-            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
-            className="btn-secondary"
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-            title={isLeftCollapsed ? 'Show Problem Specifications' : 'Collapse Specifications (Maximize Ladder Canvas)'}
-            id="btn-toggle-full-canvas"
+            onClick={() => setShowValidationModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '5px 9px',
+              fontSize: '11.5px',
+              fontFamily: 'var(--font-mono)',
+              borderRadius: '4px',
+              border: syntaxValidation.valid ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.4)',
+              background: syntaxValidation.valid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.15)',
+              color: syntaxValidation.valid ? '#10b981' : '#f87171',
+              cursor: 'pointer'
+            }}
+            title="Inspect syntax and rung validation"
           >
-            <Layers size={13} />
-            {isLeftCollapsed ? 'Show Specs' : 'Full Canvas'}
+            {syntaxValidation.valid ? <Check size={12} /> : <AlertTriangle size={12} />}
+            <span>{syntaxValidation.valid ? 'Syntax OK' : `${syntaxValidation.errors.length} Syntax Warn`}</span>
           </button>
+
+          {/* Save / Restore buttons */}
+          <button
+            onClick={handleSaveProgram}
+            className="btn-secondary"
+            style={{ padding: '5px 10px', fontSize: '11.5px' }}
+            title="Save your current ladder logic in local browser storage"
+            id="btn-save-program"
+          >
+            <Save size={12} /> Save
+          </button>
+
+          {hasSavedProgram && (
+            <button
+              onClick={handleRestoreProgram}
+              className="btn-secondary"
+              style={{ padding: '5px 10px', fontSize: '11.5px' }}
+              title="Restore saved program from local storage"
+              id="btn-restore-program"
+            >
+              <Download size={12} /> Restore
+            </button>
+          )}
 
           <button
             onClick={handleRevertLadder}
             className="btn-secondary"
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-            title="Revert back to starter ladder"
+            style={{ padding: '5px 10px', fontSize: '11.5px' }}
+            title="Revert back to initial starter code"
             id="btn-revert-starter"
           >
-            <RotateCcw size={13} />
-            Reset Code
+            <RotateCcw size={12} /> Reset
+          </button>
+
+          <button
+            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
+            className="btn-secondary"
+            style={{ padding: '5px 10px', fontSize: '11.5px' }}
+            title={isLeftCollapsed ? 'Show Problem Specifications' : 'Collapse Specifications (Maximize Canvas)'}
+            id="btn-toggle-full-canvas"
+          >
+            <Layers size={12} />
+            {isLeftCollapsed ? 'Show Specs' : 'Full Canvas'}
           </button>
 
           <button
             onClick={handleRunPublicTests}
             disabled={isRunningTests || isSubmitting}
             className="btn-secondary"
-            style={{ padding: '6px 14px', fontSize: '12.5px', background: 'var(--bg-card)' }}
+            style={{ padding: '5px 12px', fontSize: '12px', background: 'var(--bg-card)' }}
             id="btn-top-run-code"
           >
             {isRunningTests ? 'Running...' : 'Run Public Tests'}
@@ -324,7 +468,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
             onClick={handleSubmitSolution}
             disabled={isRunningTests || isSubmitting}
             className="btn-primary"
-            style={{ padding: '6px 16px', fontSize: '12.5px' }}
+            style={{ padding: '5px 14px', fontSize: '12px' }}
             id="btn-top-submit"
           >
             {isSubmitting ? 'Evaluating...' : 'Submit Solution'}
@@ -336,7 +480,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left Column: Problem Statement & I/O Specifications */}
         <div style={{
-          width: isLeftCollapsed ? '0px' : '320px',
+          width: isLeftCollapsed ? '0px' : '330px',
           borderRight: isLeftCollapsed ? 'none' : '1px solid var(--border-subtle)',
           background: 'var(--bg-surface)',
           display: 'flex',
@@ -344,14 +488,14 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           overflow: 'hidden',
           transition: 'width 0.2s ease'
         }}>
-          {/* Subtabs: Description vs Pin Mapping */}
+          {/* Subtabs: Description | Pin Mapping | Test Cases */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-card)' }}>
             <button
               onClick={() => setLeftTab('problem')}
               style={{
                 flex: 1,
-                padding: '9px 12px',
-                fontSize: '12px',
+                padding: '9px 8px',
+                fontSize: '11.5px',
                 fontWeight: '600',
                 color: leftTab === 'problem' ? 'var(--text-primary)' : 'var(--text-muted)',
                 borderBottom: leftTab === 'problem' ? '2px solid var(--text-primary)' : 'none',
@@ -359,17 +503,18 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px'
+                gap: '5px',
+                cursor: 'pointer'
               }}
             >
-              <FileText size={13} /> Description
+              <FileText size={12} /> Specs
             </button>
             <button
               onClick={() => setLeftTab('pins')}
               style={{
                 flex: 1,
-                padding: '9px 12px',
-                fontSize: '12px',
+                padding: '9px 8px',
+                fontSize: '11.5px',
                 fontWeight: '600',
                 color: leftTab === 'pins' ? 'var(--text-primary)' : 'var(--text-muted)',
                 borderBottom: leftTab === 'pins' ? '2px solid var(--text-primary)' : 'none',
@@ -377,38 +522,60 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px'
+                gap: '5px',
+                cursor: 'pointer'
               }}
             >
-              <Sliders size={13} /> I/O Pin Map
+              <Sliders size={12} /> I/O Map
+            </button>
+            <button
+              onClick={() => setLeftTab('tests')}
+              style={{
+                flex: 1,
+                padding: '9px 8px',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                color: leftTab === 'tests' ? 'var(--text-primary)' : 'var(--text-muted)',
+                borderBottom: leftTab === 'tests' ? '2px solid var(--text-primary)' : 'none',
+                background: leftTab === 'tests' ? 'var(--bg-card-hover)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              <Terminal size={12} /> Tests
             </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-            {leftTab === 'problem' ? (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
+            {leftTab === 'problem' && (
               <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
                 <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-main)' }}>
                   {problem.description}
                 </div>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            )}
+
+            {leftTab === 'pins' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Inputs Allocation Table
+                  <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Digital Inputs Allocation
                   </h4>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <tbody>
                       {(problem.inputs || []).map(inp => (
                         <tr key={inp.address} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                          <td style={{ padding: '6px 4px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: '#00ff88' }}>
+                          <td style={{ padding: '6px 4px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: '#10b981' }}>
                             {inp.address}
                           </td>
                           <td style={{ padding: '6px 4px', fontWeight: '500', color: 'var(--text-primary)' }}>
                             {inp.name}
                           </td>
                           <td style={{ padding: '6px 4px', color: 'var(--text-dim)', fontSize: '11px' }}>
-                            {inp.type || 'Digital'}
+                            {inp.description || inp.type || 'Digital'}
                           </td>
                         </tr>
                       ))}
@@ -417,8 +584,8 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 </div>
 
                 <div>
-                  <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Outputs Allocation Table
+                  <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Digital Outputs Allocation
                   </h4>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <tbody>
@@ -430,11 +597,57 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                           <td style={{ padding: '6px 4px', fontWeight: '500', color: 'var(--text-primary)' }}>
                             {out.name}
                           </td>
+                          <td style={{ padding: '6px 4px', color: 'var(--text-dim)', fontSize: '11px' }}>
+                            {out.description || 'Actuator Coil'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+
+                <div>
+                  <h4 style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Internal Memory & Registers
+                  </h4>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <div>• <strong>M0..M15:</strong> Internal Bit Relays (auxiliary flags, latches)</div>
+                    <div>• <strong>T0..T3:</strong> Timers (TON On-Delay, reads T0.DN)</div>
+                    <div>• <strong>C0..C3:</strong> Counters (CTU Up-Counter, reads C0.DN)</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {leftTab === 'tests' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Public Test Scenarios evaluated on verification:
+                </div>
+
+                {(problem.publicTests || []).map((tc, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-muted)',
+                      borderRadius: '6px',
+                      padding: '10px'
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {tc.name}
+                    </div>
+                    {tc.description && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        {tc.description}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                      {tc.steps?.length || 1} Step(s) Sequence
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -457,7 +670,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
             />
           </div>
 
-          {/* Collapsible Bottom Test Results Drawer (LeetCode style) */}
+          {/* Collapsible Bottom Test Results Drawer */}
           <div style={{
             height: isBottomCollapsed ? '38px' : `${bottomPanelHeight}px`,
             transition: 'height 0.2s ease',
@@ -466,7 +679,6 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
             flexDirection: 'column',
             position: 'relative'
           }}>
-            {/* Header / Collapse Toggle */}
             <div
               style={{
                 height: '38px',
@@ -480,8 +692,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               }}
               onClick={() => setIsBottomCollapsed(!isBottomCollapsed)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: '600' }}>
-                <span>Test Bench & Output Diagnostics</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '600' }}>
+                <Terminal size={14} />
+                <span>Test Bench & Diagnostics</span>
                 {(testData || submissionData) && (
                   <span style={{
                     fontSize: '11px',
@@ -495,7 +708,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
-                {isBottomCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                {isBottomCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
               </div>
             </div>
 
@@ -526,6 +739,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
             fault={fault}
             setFault={setFault}
             problem={problem}
+            plcState={plcState}
             isScanning={isScanning}
             setIsScanning={setIsScanning}
             onStepScan={handleStepScan}
@@ -533,6 +747,60 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
           />
         </div>
       </div>
+
+      {/* Syntax Validation Diagnostic Modal */}
+      {showValidationModal && (
+        <div className="modal-overlay" onClick={() => setShowValidationModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                {syntaxValidation.valid ? <CheckCircle2 size={20} color="#10b981" /> : <AlertTriangle size={20} color="#ef4444" />}
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                  {syntaxValidation.valid ? 'Ladder Logic Validated' : 'Syntax & Rule Diagnostics'}
+                </h3>
+              </div>
+
+              {syntaxValidation.valid ? (
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  ✓ All rungs comply with IEC 61131-3 virtual syntax rules.
+                  <br />✓ Contacts and coils have valid, non-empty I/O addresses.
+                  <br />✓ Timer and counter prefixes (T, C) are correctly formatted.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                    Please resolve the following before running tests:
+                  </p>
+                  {syntaxValidation.errors.map((errText, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '8px 10px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid #ef4444',
+                        borderRadius: '4px',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)',
+                        color: '#f87171'
+                      }}
+                    >
+                      {errText}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                className="btn-secondary"
+                style={{ width: '100%', marginTop: '16px' }}
+                onClick={() => setShowValidationModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Submission Success Modal */}
       {showCelebrationModal && submissionData && (

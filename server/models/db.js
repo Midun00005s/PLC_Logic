@@ -56,7 +56,19 @@ class DatabaseStore {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         const parsed = JSON.parse(raw);
         this.data.users = parsed.users?.length ? parsed.users : DEFAULT_USERS;
-        this.data.problems = parsed.problems?.length ? parsed.problems : seedProblems;
+
+        // Preserve all existing challenges and add seed challenges if not already present
+        const existingProblems = Array.isArray(parsed.problems) ? parsed.problems : [];
+        const existingIds = new Set(existingProblems.map(p => p.id));
+        const mergedProblems = [...existingProblems];
+
+        seedProblems.forEach(sp => {
+          if (!existingIds.has(sp.id)) {
+            mergedProblems.push(sp);
+          }
+        });
+
+        this.data.problems = mergedProblems.length > 0 ? mergedProblems : seedProblems;
         this.data.submissions = parsed.submissions || [];
         this.data.leaderboard = parsed.leaderboard?.length ? parsed.leaderboard : DEFAULT_LEADERBOARD;
       } else {
@@ -195,9 +207,28 @@ class DatabaseStore {
   }
 
   createOrUpdateProblem(problemData) {
+    if (!problemData || typeof problemData !== 'object') {
+      throw new Error('Problem data must be a valid object.');
+    }
+    if (!problemData.title || typeof problemData.title !== 'string' || problemData.title.trim() === '') {
+      throw new Error('Problem title is required.');
+    }
+    const validDifficulties = ['Easy', 'Medium', 'Hard'];
+    if (!validDifficulties.includes(problemData.difficulty)) {
+      throw new Error("Difficulty must be one of 'Easy', 'Medium', or 'Hard'.");
+    }
+
     const id = problemData.id || `prob-${Date.now()}`;
     const existingIndex = this.data.problems.findIndex(p => p.id === id);
-    const problem = { ...problemData, id };
+    const problem = {
+      ...problemData,
+      id,
+      inputs: Array.isArray(problemData.inputs) ? problemData.inputs : [],
+      outputs: Array.isArray(problemData.outputs) ? problemData.outputs : [],
+      publicTests: Array.isArray(problemData.publicTests) ? problemData.publicTests : [],
+      hiddenTests: Array.isArray(problemData.hiddenTests) ? problemData.hiddenTests : [],
+      starterLadder: problemData.starterLadder || { rungs: [] }
+    };
 
     if (existingIndex >= 0) {
       this.data.problems[existingIndex] = problem;

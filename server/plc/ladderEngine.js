@@ -1,15 +1,97 @@
 /**
  * PLC Ladder Logic Execution Engine (IEC 61131-3 virtual simulation)
+ * 
  * Supports:
  * - NO Contacts (Normally Open -[ ]-)
  * - NC Contacts (Normally Closed -[/]-)
- * - Coils (-( )-), Set/Latch (-(S)-), Reset/Unlatch (-(R)-)
- * - Parallel Branches (OR seal-in logic)
- * - Timers (TON On-Delay)
- * - Counters (CTU Up-Counter with rising-edge detection)
- * - Internal Relays (M0..M7)
- * - Fault condition injection
+ * - Output Coils (-( )-), Set/Latch (-(S)-), Reset/Unlatch (-(R)-)
+ * - Parallel Branches (OR seal-in & parallel path logic)
+ * - Timers: TON (On-Delay Timer with preset & elapsed accumulation)
+ * - Counters: CTU (Up-Counter with rising-edge detection)
+ * - Internal Relays: M0..M15
+ * - Fault condition injection & I/O forcing
  */
+
+export const SUPPORTED_INSTRUCTIONS = ['NO', 'NC', 'COIL', 'SET', 'RESET', 'TON', 'CTU', 'BRANCH'];
+
+/**
+ * Validates ladder diagram schema and instruction integrity
+ * @param {Object} ladder - { rungs: [...] }
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateLadder(ladder) {
+  const errors = [];
+  if (!ladder || typeof ladder !== 'object') {
+    return { valid: false, errors: ['Ladder program must be a valid JSON object.'] };
+  }
+
+  if (!Array.isArray(ladder.rungs)) {
+    return { valid: false, errors: ['Ladder program must contain an array of rungs.'] };
+  }
+
+  ladder.rungs.forEach((rung, rIdx) => {
+    const rungPrefix = `Rung ${String(rIdx).padStart(4, '0')}`;
+    if (!rung || typeof rung !== 'object') {
+      errors.push(`${rungPrefix}: Invalid rung definition.`);
+      return;
+    }
+
+    const elements = rung.elements || [];
+    if (!Array.isArray(elements)) {
+      errors.push(`${rungPrefix}: Elements must be an array.`);
+      return;
+    }
+
+    function checkElement(el, path) {
+      if (!el || typeof el !== 'object') {
+        errors.push(`${path}: Invalid element object.`);
+        return;
+      }
+
+      if (!SUPPORTED_INSTRUCTIONS.includes(el.type)) {
+        errors.push(`${path}: Unsupported instruction type '${el.type}'. Supported types: ${SUPPORTED_INSTRUCTIONS.join(', ')}.`);
+        return;
+      }
+
+      if (el.type === 'BRANCH') {
+        if (!Array.isArray(el.branches) || el.branches.length === 0) {
+          errors.push(`${path}: Parallel branch must contain at least one branch path.`);
+        } else {
+          el.branches.forEach((branchLeg, legIdx) => {
+            if (!Array.isArray(branchLeg)) {
+              errors.push(`${path} [Branch ${legIdx}]: Branch leg must be an array.`);
+            } else {
+              branchLeg.forEach((bEl, bIdx) => {
+                checkElement(bEl, `${path} [Branch ${legIdx}, Item ${bIdx}]`);
+              });
+            }
+          });
+        }
+      } else {
+        if (!el.address || typeof el.address !== 'string' || el.address.trim() === '') {
+          errors.push(`${path}: Instruction [${el.type}] is missing an address.`);
+        } else {
+          const cleanAddr = el.address.trim().toUpperCase();
+          if (el.type === 'TON' && !cleanAddr.startsWith('T')) {
+            errors.push(`${path}: TON timer address must begin with 'T' (e.g. T0, T1).`);
+          }
+          if (el.type === 'CTU' && !cleanAddr.startsWith('C')) {
+            errors.push(`${path}: CTU counter address must begin with 'C' (e.g. C0, C1).`);
+          }
+        }
+      }
+    }
+
+    elements.forEach((el, eIdx) => {
+      checkElement(el, `${rungPrefix} [Element ${eIdx}]`);
+    });
+  });
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
 
 export class VirtualPLC {
   constructor(initialConfig = {}) {
@@ -28,6 +110,7 @@ export class VirtualPLC {
     this.memory = {
       M0: false, M1: false, M2: false, M3: false,
       M4: false, M5: false, M6: false, M7: false,
+      M8: false, M9: false, M10: false, M11: false,
       ...(initialConfig.memory || {})
     };
 
@@ -50,6 +133,7 @@ export class VirtualPLC {
     };
 
     this.fault = initialConfig.fault || 'NORMAL';
+    this.forcedInputs = { ...(initialConfig.forcedInputs || {}) };
     this.scanCount = 0;
     this.lastScanTime = Date.now();
   }
@@ -70,57 +154,95 @@ export class VirtualPLC {
       this.counters[key].lastInput = false;
     }
     this.fault = 'NORMAL';
+    this.forcedInputs = {};
     this.scanCount = 0;
   }
 
   setInputs(newInputs) {
-    this.inputs = { ...this.inputs, ...newInputs };
+    if (newInputs && typeof newInputs === 'object') {
+      this.inputs = { ...this.inputs, ...newInputs };
+    }
   }
 
   setFault(faultMode) {
-    this.fault = faultMode;
+    this.fault = faultMode || 'NORMAL';
+  }
+
+  setForcedInputs(forced) {
+    this.forcedInputs = { ...(forced || {}) };
   }
 
   /**
-   * Resolve effective input value considering active fault simulation
+   * Resolve effective address value considering active faults and forced I/O
    */
-  getEffectiveAddressValue(address) {
-    // Check if fault overrides this address
-    if (this.fault === 'EMERGENCY_STOP') {
-      // E-Stop is physically tripped: normally closed emergency stops open (false)
-      if (address === 'X1' || address === 'ESTOP') return false;
-    } else if (this.fault === 'SENSOR_FAILURE') {
-      // Proximity / Level sensor stuck in continuous HIGH
-      if (address === 'X2' || address === 'SENSOR') return true;
-    } else if (this.fault === 'MOTOR_OVERLOAD') {
-      // Thermal overload relay tripped (NC contact opens or overload input activates)
-      if (address === 'X3' || address === 'OVERLOAD') return true;
-    } else if (this.fault === 'WIRE_BREAK') {
-      // Input wire severed: reading permanently 0
-      if (address === 'X0') return false;
+  getEffectiveAddressValue(rawAddress) {
+    if (!rawAddress || typeof rawAddress !== 'string') {
+      return false;
     }
 
+    const address = rawAddress.trim().toUpperCase();
+
+    // Check manual I/O forced overrides
+    if (address in this.forcedInputs) {
+      return Boolean(this.forcedInputs[address]);
+    }
+
+    // Dynamic fault mode evaluation
+    if (this.fault === 'EMERGENCY_STOP') {
+      // E-Stop is physically tripped: normally closed emergency contacts open (false)
+      if (address === 'X1' || address.includes('ESTOP') || address.includes('STOP_PB')) {
+        return false;
+      }
+    } else if (this.fault === 'SENSOR_FAILURE') {
+      // Proximity / Level sensor stuck in continuous HIGH
+      if (address === 'X2' || address === 'X1' || address.includes('SENSOR') || address.includes('LEVEL')) {
+        return true;
+      }
+    } else if (this.fault === 'MOTOR_OVERLOAD') {
+      // Thermal overload relay tripped HIGH
+      if (address === 'X2' || address === 'X3' || address.includes('OVERLOAD') || address.includes('OL')) {
+        return true;
+      }
+    } else if (this.fault === 'WIRE_BREAK') {
+      // Input wire severed: reading permanently 0V (false)
+      if (address === 'X0' || address.includes('START')) {
+        return false;
+      }
+    }
+
+    // Physical Input Table (X0..X31)
     if (address.startsWith('X')) {
       return Boolean(this.inputs[address]);
     }
+
+    // Physical Output Table (Y0..Y31)
     if (address.startsWith('Y')) {
       return Boolean(this.outputs[address]);
     }
+
+    // Internal Memory Relays (M0..M31)
     if (address.startsWith('M')) {
       return Boolean(this.memory[address]);
     }
+
+    // Timer Done Bit (T0.DN..T15.DN)
     if (address.startsWith('T')) {
-      const timer = this.timers[address];
+      const timerKey = address.split('.')[0];
+      const timer = this.timers[timerKey];
       return timer ? Boolean(timer.done) : false;
     }
+
+    // Counter Done Bit (C0.DN..C15.DN)
     if (address.startsWith('C')) {
-      const counter = this.counters[address];
+      const counterKey = address.split('.')[0];
+      const counter = this.counters[counterKey];
       return counter ? Boolean(counter.done) : false;
     }
 
-    // Direct lookup in inputs or outputs by name
-    if (address in this.inputs) return Boolean(this.inputs[address]);
-    if (address in this.outputs) return Boolean(this.outputs[address]);
+    // Direct lookup in inputs or outputs by symbol name
+    if (rawAddress in this.inputs) return Boolean(this.inputs[rawAddress]);
+    if (rawAddress in this.outputs) return Boolean(this.outputs[rawAddress]);
+
     return false;
   }
 
@@ -128,6 +250,7 @@ export class VirtualPLC {
    * Evaluates a single contact
    */
   evaluateContact(item) {
+    if (!item || !item.address) return false;
     const rawVal = this.getEffectiveAddressValue(item.address);
     if (item.type === 'NO') {
       // Normally Open: Conducts when address is TRUE
@@ -137,21 +260,23 @@ export class VirtualPLC {
       // Normally Closed: Conducts when address is FALSE
       return rawVal === false;
     }
-    return true;
+    return false;
   }
 
   /**
    * Evaluates a branch item or group of items in series or parallel
    */
-  evaluateElement(element) {
+  evaluateElement(element, depth = 0) {
+    if (!element || depth > 8) return false;
+
     if (element.type === 'BRANCH') {
       // Parallel branch (OR logic)
-      // At least one branch path must evaluate to TRUE
       if (!Array.isArray(element.branches) || element.branches.length === 0) {
-        return true;
+        return false;
       }
       return element.branches.some(branchElements => {
-        return branchElements.every(el => this.evaluateElement(el));
+        if (!Array.isArray(branchElements) || branchElements.length === 0) return true;
+        return branchElements.every(el => this.evaluateElement(el, depth + 1));
       });
     }
 
@@ -159,7 +284,6 @@ export class VirtualPLC {
       return this.evaluateContact(element);
     }
 
-    // Default neutral passthrough
     return true;
   }
 
@@ -170,20 +294,27 @@ export class VirtualPLC {
    */
   scan(ladder, deltaTimeMs = 50) {
     this.scanCount++;
-    const rungs = ladder?.rungs || [];
+    const rungs = (ladder && Array.isArray(ladder.rungs)) ? ladder.rungs : [];
     const rungEvaluations = [];
 
-    for (let rIdx = 0; rIdx < rungs.length; rIdx++) {
+    // Safety clamp on number of rungs to prevent runaway execution
+    const maxRungs = Math.min(rungs.length, 120);
+
+    for (let rIdx = 0; rIdx < maxRungs; rIdx++) {
       const rung = rungs[rIdx];
+      if (!rung) continue;
+
       let rungPower = true;
       const wireStates = [];
+      const elements = Array.isArray(rung.elements) ? rung.elements : [];
 
       // Evaluate series elements leading up to output
-      const elements = rung.elements || [];
       for (let eIdx = 0; eIdx < elements.length; eIdx++) {
         const el = elements[eIdx];
-        if (el.type === 'COIL' || el.type === 'SET' || el.type === 'RESET' || el.type === 'TON' || el.type === 'CTU') {
-          // Output reached - break into output evaluation
+        if (!el) continue;
+
+        if (['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type)) {
+          // Output reached - break contact evaluation
           continue;
         }
 
@@ -192,10 +323,10 @@ export class VirtualPLC {
         wireStates.push({ index: eIdx, energized: rungPower });
       }
 
-      // Check outputs in this rung
-      const outputsInRung = (rung.outputs && rung.outputs.length > 0)
+      // Collect outputs in this rung
+      const outputsInRung = (rung.outputs && Array.isArray(rung.outputs) && rung.outputs.length > 0)
         ? rung.outputs
-        : elements.filter(el => ['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type));
+        : elements.filter(el => el && ['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type));
 
       for (const outEl of outputsInRung) {
         this.executeOutput(outEl, rungPower, deltaTimeMs);
@@ -222,7 +353,8 @@ export class VirtualPLC {
   }
 
   executeOutput(outEl, rungPower, deltaTimeMs) {
-    const address = outEl.address;
+    if (!outEl || !outEl.address || typeof outEl.address !== 'string') return;
+    const address = outEl.address.trim().toUpperCase();
 
     if (outEl.type === 'COIL') {
       if (address.startsWith('Y')) {
@@ -243,14 +375,27 @@ export class VirtualPLC {
           this.counters[address].count = 0;
           this.counters[address].done = false;
         }
+        if (address.startsWith('T') && this.timers[address]) {
+          this.timers[address].elapsed = 0;
+          this.timers[address].done = false;
+          this.timers[address].running = false;
+        }
       }
     } else if (outEl.type === 'TON') {
       // Timer On-Delay
       if (!this.timers[address]) {
-        this.timers[address] = { preset: outEl.preset || 3000, elapsed: 0, done: false, running: false, lastInput: false };
+        this.timers[address] = {
+          preset: Number(outEl.preset) || 3000,
+          elapsed: 0,
+          done: false,
+          running: false,
+          lastInput: false
+        };
       }
       const t = this.timers[address];
-      if (outEl.preset) t.preset = outEl.preset;
+      if (outEl.preset && !isNaN(outEl.preset)) {
+        t.preset = Number(outEl.preset);
+      }
 
       if (rungPower) {
         t.running = true;
@@ -268,10 +413,17 @@ export class VirtualPLC {
     } else if (outEl.type === 'CTU') {
       // Up Counter
       if (!this.counters[address]) {
-        this.counters[address] = { preset: outEl.preset || 5, count: 0, done: false, lastInput: false };
+        this.counters[address] = {
+          preset: Number(outEl.preset) || 5,
+          count: 0,
+          done: false,
+          lastInput: false
+        };
       }
       const c = this.counters[address];
-      if (outEl.preset) c.preset = outEl.preset;
+      if (outEl.preset && !isNaN(outEl.preset)) {
+        c.preset = Number(outEl.preset);
+      }
 
       // Rising-edge detection (false -> true)
       if (rungPower && !c.lastInput) {
@@ -286,11 +438,11 @@ export class VirtualPLC {
 }
 
 /**
- * Helper to run a sequence of virtual PLC scan cycles for a ladder
+ * Helper to run a single virtual PLC scan cycle for a ladder
  */
 export function executeLadder(ladder, inputs, previousState = null, deltaTimeMs = 50) {
   const plc = new VirtualPLC(previousState || {});
-  plc.setInputs(inputs);
+  if (inputs) plc.setInputs(inputs);
   const result = plc.scan(ladder, deltaTimeMs);
   return {
     outputs: result.outputs,

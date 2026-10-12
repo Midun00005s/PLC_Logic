@@ -72,23 +72,23 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
 
   const handleCreateNew = () => {
     setEditingProblem({
-      title: 'Pump Station Automatic Level Control',
+      title: 'New Industrial Automation Challenge',
       difficulty: 'Easy',
       category: 'Process Automation',
-      tag: 'Water Treatment',
-      description: `### Industrial Problem Statement\nImplement an automated pump station start/stop control with auxiliary contact latching (seal-in circuit).\n\n### Requirements:\n1. When **START PUSHBUTTON** (\`X0\`) is pressed (momentary), Pump Motor (\`Y0\`) must turn **ON**.\n2. When **START** (\`X0\`) is released, Pump Motor (\`Y0\`) must **remain ON** via auxiliary latching.\n3. When **STOP PUSHBUTTON** (\`X1\`) is pressed, Pump Motor (\`Y0\`) must turn **OFF**.\n\n### Standard Architecture Hint:\n- Rung 0: Branch with \`[NO X0]\` in parallel with \`[NO Y0]\`, followed by series \`[NC X1]\`, terminating in \`[COIL Y0]\`.`,
+      tag: 'Factory Automation',
+      description: `### Industrial Problem Statement\nDescribe the operational requirements and safety constraints for this automation process.\n\n### Requirements:\n1. When **START PUSHBUTTON** (\`X0\`) is pressed, Actuator (\`Y0\`) turns **ON**.\n2. When **START** (\`X0\`) is released, Actuator (\`Y0\`) remains **ON** via seal-in logic.\n3. When **STOP PUSHBUTTON** (\`X1\`) is pressed, Actuator (\`Y0\`) turns **OFF**.\n\n### Standard Architecture Hint:\n- Rung 0: Branch with \`[NO X0]\` in parallel with \`[NO Y0]\`, followed by series \`[NC X1]\`, terminating in \`[COIL Y0]\`.`,
       inputs: [
         { address: 'X0', name: 'START_PB', description: 'Start Pushbutton (NO momentary)', type: 'momentary' },
         { address: 'X1', name: 'STOP_PB', description: 'Stop Pushbutton (NC stop)', type: 'momentary' }
       ],
       outputs: [
-        { address: 'Y0', name: 'PUMP_MOTOR', description: 'Main Pump Contactor', color: '#10b981' }
+        { address: 'Y0', name: 'MAIN_ACTUATOR', description: 'Main Contactor / Drive', color: '#10b981' }
       ],
       starterLadder: {
         rungs: [
           {
             id: 'rung-1',
-            comment: 'Pump Start/Stop with Auxiliary Contact Seal-In',
+            comment: 'Actuator Start/Stop with Auxiliary Contact Seal-In',
             elements: [
               {
                 type: 'BRANCH',
@@ -105,16 +105,16 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
       },
       publicTests: [
         {
-          name: 'Test 1: Start Button Turns Pump ON & Seals In',
+          name: 'Test 1: Start Button Activates & Seals In',
           steps: [
             { step: 1, description: 'Press Start PB', inputs: { X0: true, X1: false }, expected: { Y0: true } },
             { step: 2, description: 'Release Start PB (Seal-in check)', inputs: { X0: false, X1: false }, expected: { Y0: true } }
           ]
         },
         {
-          name: 'Test 2: Stop Button Turns Pump OFF',
+          name: 'Test 2: Stop Button Deactivates Output',
           steps: [
-            { step: 1, description: 'Start the pump', inputs: { X0: true, X1: false }, expected: { Y0: true } },
+            { step: 1, description: 'Start actuator', inputs: { X0: true, X1: false }, expected: { Y0: true } },
             { step: 2, description: 'Press Stop PB', inputs: { X0: false, X1: true }, expected: { Y0: false } },
             { step: 3, description: 'Release Stop PB', inputs: { X0: false, X1: false }, expected: { Y0: false } }
           ]
@@ -183,6 +183,19 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
   const handleSaveProblem = async (e) => {
     e.preventDefault();
     try {
+      if (!editingProblem.title?.trim()) {
+        setStatusMsg({ type: 'error', text: 'Problem title is required.' });
+        return;
+      }
+      if (!editingProblem.inputs?.length) {
+        setStatusMsg({ type: 'error', text: 'At least one input address must be configured.' });
+        return;
+      }
+      if (!editingProblem.outputs?.length) {
+        setStatusMsg({ type: 'error', text: 'At least one output address must be configured.' });
+        return;
+      }
+
       const isUpdate = Boolean(editingProblem.id);
       const url = isUpdate ? `/api/problems/${editingProblem.id}` : '/api/problems';
       const method = isUpdate ? 'PUT' : 'POST';
@@ -199,8 +212,8 @@ export default function SuperAdminDashboard({ onOpenProblem }) {
         setEditingProblem(null);
         loadAllData();
       } else {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to save');
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to save problem configuration');
       }
     } catch (err) {
       setStatusMsg({ type: 'error', text: err.message });

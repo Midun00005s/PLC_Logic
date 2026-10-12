@@ -196,6 +196,14 @@ A manufacturing line requires automated batch counting. When an optical proximit
         },
         {
           id: "rung-2",
+          comment: "Counter Reset on X2",
+          elements: [
+            { type: "NO", address: "X2" },
+            { type: "RESET", address: "C0" }
+          ]
+        },
+        {
+          id: "rung-3",
           comment: "Part Counter (Preset 5)",
           elements: [
             { type: "NO", address: "X1" },
@@ -203,7 +211,7 @@ A manufacturing line requires automated batch counting. When an optical proximit
           ]
         },
         {
-          id: "rung-3",
+          id: "rung-4",
           comment: "Batch Complete Divert & Buzzer",
           elements: [
             { type: "NO", address: "C0" },
@@ -211,19 +219,11 @@ A manufacturing line requires automated batch counting. When an optical proximit
           ]
         },
         {
-          id: "rung-4",
+          id: "rung-5",
           comment: "Warning Buzzer on Complete",
           elements: [
             { type: "NO", address: "C0" },
             { type: "COIL", address: "Y2" }
-          ]
-        },
-        {
-          id: "rung-5",
-          comment: "Counter Reset",
-          elements: [
-            { type: "NO", address: "X2" },
-            { type: "RESET", address: "C0" }
           ]
         }
       ]
