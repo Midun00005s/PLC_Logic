@@ -188,36 +188,44 @@ export default function VirtualIOPanel({
 
       {/* Tab 1: Virtual I/O Rack */}
       {activeTab === 'io' && (
-        <div style={{ flex: 1, overflow: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Digital Inputs Section */}
-          <div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Module 1: 1769-IQ16 Digital 24VDC Sinking/Sourcing Inputs */}
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+          }}>
+            {/* Module Nameplate */}
             <div style={{
+              background: 'var(--nav-bg, #2b3547)',
+              color: '#ffffff',
+              padding: '6px 12px',
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '10px'
+              justifyContent: 'space-between',
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)'
             }}>
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                Digital Inputs (DI 24VDC)
-              </span>
-              <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                {problemInputs.length} Configured
-              </span>
+              <span style={{ fontWeight: 'bold' }}>SLOT 1: DIGITAL INPUTS (24VDC)</span>
+              <span style={{ fontSize: '10px', color: '#93c5fd' }}>1769-IQ16</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {problemInputs.map(inp => {
+            <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {problemInputs.map((inp, idx) => {
                 const isPressed = Boolean(inputs[inp.address]);
                 const isMomentary = inp.type === 'momentary';
+                const rackAddress = `I:0.${inp.address.replace('X', '')}`;
 
                 return (
                   <div
                     key={inp.address}
                     style={{
-                      background: 'var(--bg-card)',
-                      border: isPressed ? '1px solid #10b981' : '1px solid var(--border-muted)',
-                      borderRadius: '8px',
-                      padding: '10px 14px',
+                      background: 'var(--bg-surface)',
+                      border: isPressed ? '1.5px solid #16a34a' : '1px solid var(--border-subtle)',
+                      borderRadius: '5px',
+                      padding: '8px 12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -226,22 +234,35 @@ export default function VirtualIOPanel({
                     id={`io-input-card-${inp.address}`}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className={`status-dot ${isPressed ? 'active' : 'inactive'}`} />
+                      {/* Industrial Bi-color LED Indicator */}
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: isPressed ? '#16a34a' : '#ef4444',
+                        boxShadow: isPressed ? '0 0 8px #16a34a' : '0 0 4px rgba(239, 68, 68, 0.4)',
+                        border: '1px solid #1e293b'
+                      }} />
+
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isPressed ? 'var(--live-wire)' : 'var(--text-primary)' }}>
-                            {inp.address}
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '12.5px', color: isPressed ? '#16a34a' : '#0284c7' }}>
+                            {rackAddress}
                           </span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>
+                            [{inp.address}]
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-primary)' }}>
                             {inp.name}
                           </span>
                         </div>
-                        <div style={{ fontSize: '10.5px', color: 'var(--text-dim)' }}>
-                          {inp.description || (isMomentary ? 'Push-to-hold button' : 'Toggle switch')}
+                        <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '1px' }}>
+                          {isPressed ? '🟢 HIGH (24VDC)' : '🔴 LOW (0VDC)'} • {isMomentary ? 'Momentary PB' : 'Maintained Sw'}
                         </div>
                       </div>
                     </div>
 
+                    {/* Industrial Field Pushbutton Simulation */}
                     {isMomentary ? (
                       <button
                         onMouseDown={() => handleMomentaryDown(inp.address)}
@@ -251,36 +272,39 @@ export default function VirtualIOPanel({
                         onTouchEnd={() => handleMomentaryUp(inp.address)}
                         onBlur={() => handleMomentaryUp(inp.address)}
                         style={{
-                          background: isPressed ? '#059669' : '#1e293b',
-                          color: isPressed ? '#000' : '#f8fafc',
-                          border: isPressed ? '1px solid #34d399' : '1px solid #475569',
-                          borderRadius: '6px',
-                          padding: '6px 14px',
-                          fontSize: '11.5px',
+                          background: isPressed ? '#15803d' : 'var(--bg-card)',
+                          color: isPressed ? '#ffffff' : 'var(--text-primary)',
+                          border: isPressed ? '1px solid #22c55e' : '1px solid var(--border-muted)',
+                          borderRadius: '4px',
+                          padding: '5px 12px',
+                          fontSize: '11px',
                           fontWeight: 'bold',
-                          boxShadow: isPressed ? '0 0 10px rgba(0, 255, 136, 0.4)' : 'none',
-                          userSelect: 'none',
-                          cursor: 'pointer'
+                          fontFamily: 'var(--font-mono)',
+                          boxShadow: isPressed ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+                          cursor: 'pointer',
+                          userSelect: 'none'
                         }}
                         id={`btn-momentary-${inp.address}`}
                       >
-                        {isPressed ? 'HELD' : 'PRESS'}
+                        {isPressed ? 'PRESSED' : 'PUSH'}
                       </button>
                     ) : (
                       <button
                         onClick={() => handleToggleInput(inp.address)}
                         style={{
-                          background: isPressed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                          color: isPressed ? '#10b981' : 'var(--text-muted)',
-                          border: isPressed ? '1px solid #10b981' : '1px solid #334155',
-                          borderRadius: '6px',
-                          padding: '6px 14px',
-                          fontSize: '11.5px',
-                          fontWeight: 'bold'
+                          background: isPressed ? 'rgba(22, 163, 74, 0.15)' : 'var(--bg-card)',
+                          color: isPressed ? '#16a34a' : 'var(--text-muted)',
+                          border: isPressed ? '1px solid #16a34a' : '1px solid var(--border-muted)',
+                          borderRadius: '4px',
+                          padding: '5px 12px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          fontFamily: 'var(--font-mono)',
+                          cursor: 'pointer'
                         }}
                         id={`btn-toggle-${inp.address}`}
                       >
-                        {isPressed ? 'ON' : 'OFF'}
+                        {isPressed ? 'TOGGLE: ON' : 'TOGGLE: OFF'}
                       </button>
                     )}
                   </div>
@@ -289,35 +313,42 @@ export default function VirtualIOPanel({
             </div>
           </div>
 
-          {/* Digital Outputs Section */}
-          <div>
+          {/* Module 2: 1769-OW8 Digital Relay Outputs */}
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+          }}>
+            {/* Module Nameplate */}
             <div style={{
+              background: 'var(--nav-bg, #2b3547)',
+              color: '#ffffff',
+              padding: '6px 12px',
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '10px'
+              justifyContent: 'space-between',
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)'
             }}>
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                Digital Outputs (DO Relay)
-              </span>
-              <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                {problemOutputs.length} Configured
-              </span>
+              <span style={{ fontWeight: 'bold' }}>SLOT 2: DIGITAL OUTPUTS (RELAY)</span>
+              <span style={{ fontSize: '10px', color: '#93c5fd' }}>1769-OW8</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {problemOutputs.map(out => {
                 const isEnergized = Boolean(outputs[out.address]);
-                const color = out.color || '#38bdf8';
+                const rackAddress = `O:0.${out.address.replace('Y', '')}`;
 
                 return (
                   <div
                     key={out.address}
                     style={{
-                      background: isEnergized ? 'rgba(56, 189, 248, 0.08)' : 'var(--bg-card)',
-                      border: isEnergized ? `1px solid ${color}` : '1px solid var(--border-muted)',
-                      borderRadius: '8px',
-                      padding: '10px 14px',
+                      background: 'var(--bg-surface)',
+                      border: isEnergized ? '1.5px solid #0284c7' : '1px solid var(--border-subtle)',
+                      borderRadius: '5px',
+                      padding: '8px 12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -326,42 +357,52 @@ export default function VirtualIOPanel({
                     id={`io-output-card-${out.address}`}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {/* Output LED Bezel */}
                       <div style={{
                         width: '12px',
                         height: '12px',
                         borderRadius: '50%',
-                        background: isEnergized ? color : '#334155',
-                        boxShadow: isEnergized ? `0 0 10px ${color}` : 'none',
-                        transition: 'all 0.2s ease'
+                        background: isEnergized ? '#0284c7' : '#475569',
+                        boxShadow: isEnergized ? '0 0 10px #0284c7' : 'none',
+                        border: '1px solid #1e293b'
                       }} />
+
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '13px', color: isEnergized ? color : 'var(--text-primary)' }}>
-                            {out.address}
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', fontSize: '12.5px', color: isEnergized ? '#0284c7' : 'var(--text-primary)' }}>
+                            {rackAddress}
                           </span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>
+                            [{out.address}]
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-primary)' }}>
                             {out.name}
                           </span>
                         </div>
-                        <div style={{ fontSize: '10.5px', color: 'var(--text-dim)' }}>
-                          {out.description || 'Actuator Coil'}
+                        <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '1px' }}>
+                          {isEnergized ? '🟢 COIL CLOSED (ENERGIZED)' : '⚪ CONTACTS OPEN (DE-ENERGIZED)'}
                         </div>
                       </div>
                     </div>
 
                     <div style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '12px',
+                      fontSize: '11px',
                       fontWeight: 'bold',
-                      color: isEnergized ? color : 'var(--text-dim)'
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: isEnergized ? 'rgba(56, 189, 248, 0.15)' : 'var(--bg-card)',
+                      color: isEnergized ? '#0284c7' : 'var(--text-dim)',
+                      border: isEnergized ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid var(--border-subtle)'
                     }}>
-                      {isEnergized ? '🟢 ENERGIZED' : '⚪ OFF'}
+                      {isEnergized ? 'CLOSED' : 'OPEN'}
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+
 
           {/* Timers & Counters Live Telemetry */}
           {(Object.keys(timers).length > 0 || Object.keys(counters).length > 0) && (

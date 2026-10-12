@@ -41,9 +41,9 @@ export default function Leaderboard() {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
-          background: 'rgba(6, 182, 212, 0.12)',
-          border: '1px solid rgba(6, 182, 212, 0.3)',
-          color: '#38bdf8',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-subtle)',
+          color: 'var(--text-primary)',
           padding: '4px 14px',
           borderRadius: '20px',
           fontSize: '11px',
@@ -91,7 +91,7 @@ export default function Leaderboard() {
                   key={idx}
                   style={{
                     borderBottom: '1px solid var(--border-subtle)',
-                    background: isCurrentUser ? 'rgba(6, 182, 212, 0.1)' : 'transparent',
+                    background: isCurrentUser ? 'var(--bg-card-hover)' : 'transparent',
                     transition: 'background 0.15s ease'
                   }}
                 >
@@ -113,8 +113,8 @@ export default function Leaderboard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '18px' }}>{item.avatar || '⚡'}</span>
                       <div>
-                        <div style={{ fontWeight: 'bold', color: isCurrentUser ? 'var(--plc-cyan)' : 'var(--text-primary)' }}>
-                          {item.name} {isCurrentUser && <span style={{ fontSize: '11px', color: '#38bdf8' }}>(You)</span>}
+                        <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                          {item.name} {isCurrentUser && <span style={{ fontSize: '11px', color: 'var(--live-wire)', fontWeight: 'normal' }}>(You)</span>}
                         </div>
                       </div>
                     </div>

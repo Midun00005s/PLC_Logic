@@ -38,6 +38,7 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
 
   // Left sidebar tabs: 'problem' | 'pins'
   const [leftTab, setLeftTab] = useState('problem');
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
 
   // Test Execution State
   const [testData, setTestData] = useState(null);
@@ -288,6 +289,17 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
+            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
+            className="btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+            title={isLeftCollapsed ? 'Show Problem Specifications' : 'Collapse Specifications (Maximize Ladder Canvas)'}
+            id="btn-toggle-full-canvas"
+          >
+            <Layers size={13} />
+            {isLeftCollapsed ? 'Show Specs' : 'Full Canvas'}
+          </button>
+
+          <button
             onClick={handleRevertLadder}
             className="btn-secondary"
             style={{ padding: '6px 12px', fontSize: '12px' }}
@@ -324,12 +336,13 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left Column: Problem Statement & I/O Specifications */}
         <div style={{
-          width: '320px',
-          borderRight: '1px solid var(--border-subtle)',
+          width: isLeftCollapsed ? '0px' : '320px',
+          borderRight: isLeftCollapsed ? 'none' : '1px solid var(--border-subtle)',
           background: 'var(--bg-surface)',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          transition: 'width 0.2s ease'
         }}>
           {/* Subtabs: Description vs Pin Mapping */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-card)' }}>
@@ -340,9 +353,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 padding: '9px 12px',
                 fontSize: '12px',
                 fontWeight: '600',
-                color: leftTab === 'problem' ? 'var(--plc-cyan)' : 'var(--text-muted)',
-                borderBottom: leftTab === 'problem' ? '2px solid var(--plc-cyan)' : 'none',
-                background: leftTab === 'problem' ? 'rgba(6, 182, 212, 0.08)' : 'transparent',
+                color: leftTab === 'problem' ? 'var(--text-primary)' : 'var(--text-muted)',
+                borderBottom: leftTab === 'problem' ? '2px solid var(--text-primary)' : 'none',
+                background: leftTab === 'problem' ? 'var(--bg-surface)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -358,9 +371,9 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
                 padding: '9px 12px',
                 fontSize: '12px',
                 fontWeight: '600',
-                color: leftTab === 'pins' ? 'var(--plc-cyan)' : 'var(--text-muted)',
-                borderBottom: leftTab === 'pins' ? '2px solid var(--plc-cyan)' : 'none',
-                background: leftTab === 'pins' ? 'rgba(6, 182, 212, 0.08)' : 'transparent',
+                color: leftTab === 'pins' ? 'var(--text-primary)' : 'var(--text-muted)',
+                borderBottom: leftTab === 'pins' ? '2px solid var(--text-primary)' : 'none',
+                background: leftTab === 'pins' ? 'var(--bg-surface)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -437,6 +450,10 @@ export default function Problem({ problemId, onBack, onOpenLeaderboard }) {
               problemOutputs={problem.outputs || []}
               rungStates={rungStates}
               plcState={plcState}
+              isScanning={isScanning}
+              setIsScanning={setIsScanning}
+              onStepScan={handleStepScan}
+              onResetPlc={handleResetPlc}
             />
           </div>
 

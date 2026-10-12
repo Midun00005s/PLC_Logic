@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, GitBranch, ArrowUp, ArrowDown, RotateCcw, Zap } from 'lucide-react';
-
-const COMPONENT_TYPES = [
-  { type: 'NO', label: 'NO Contact', symbol: '—[ ]—', desc: 'Normally Open (Conducts on TRUE)' },
-  { type: 'NC', label: 'NC Contact', symbol: '—[/]—', desc: 'Normally Closed (Conducts on FALSE)' },
-  { type: 'COIL', label: 'Output Coil', symbol: '—( )—', desc: 'Standard Output Energize' },
-  { type: 'SET', label: 'Set (Latch)', symbol: '—(S)—', desc: 'Latches bit TRUE permanently' },
-  { type: 'RESET', label: 'Reset (Unlatch)', symbol: '—(R)—', desc: 'Resets bit/counter to 0' },
-  { type: 'TON', label: 'Timer On-Delay', symbol: '[TON]', desc: 'Delays output energization' },
-  { type: 'CTU', label: 'Up-Counter', symbol: '[CTU]', desc: 'Counts rising edge pulses' }
-];
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Plus,
+  Trash2,
+  GitBranch,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
+  Zap,
+  Play,
+  Square,
+  StepForward,
+  Database,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Undo2,
+  Redo2,
+  AlertTriangle,
+  CheckCircle,
+  FileCode,
+  Sliders,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Clock,
+  Hash,
+  Layers,
+  HelpCircle
+} from 'lucide-react';
+import InstructionDialog from './InstructionDialog';
+import DataFilesModal from './DataFilesModal';
+import LadderRung from './LadderRung';
 
 export default function LadderEditor({
   ladder,
@@ -17,18 +38,89 @@ export default function LadderEditor({
   problemInputs = [],
   problemOutputs = [],
   rungStates = [],
-  plcState = null
+  plcState = null,
+  isScanning = true,
+  setIsScanning,
+  onStepScan,
+  onResetPlc
 }) {
   const [selectedRungIdx, setSelectedRungIdx] = useState(0);
+  const [paletteTab, setPaletteTab] = useState('bit'); // 'bit' | 'timer' | 'compare' | 'math'
+  const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100); // 75 to 125%
 
-  // Available addresses for selection
-  const inputAddresses = problemInputs.length > 0 
+  // Dialog State
+  const [dialogState, setDialogState] = useState({
+    isOpen: false,
+    element: null,
+    rIdx: 0,
+    elIdx: 0,
+    bIdx: null,
+    subIdx: null
+  });
+
+  // Data Files Modal State
+  const [dataModalState, setDataModalState] = useState({
+    isOpen: false,
+    initialFile: 'T4'
+  });
+
+  // Validation Warnings/Errors State
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [showValidationPopover, setShowValidationPopover] = useState(false);
+
+  // Undo / Redo History Stack
+  const historyRef = useRef([]);
+  const historyIdxRef = useRef(-1);
+  const isUndoRedoAction = useRef(false);
+
+  // Push to history when ladder changes (except during undo/redo)
+  useEffect(() => {
+    if (!ladder) return;
+    if (isUndoRedoAction.current) {
+      isUndoRedoAction.current = false;
+      return;
+    }
+    const currentSnapshot = JSON.stringify(ladder);
+    const lastSnapshot = historyRef.current[historyIdxRef.current];
+
+    if (currentSnapshot !== lastSnapshot) {
+      // Cut any redo branch
+      const nextHistory = historyRef.current.slice(0, historyIdxRef.current + 1);
+      nextHistory.push(currentSnapshot);
+      // Limit history depth to 50
+      if (nextHistory.length > 50) nextHistory.shift();
+      historyRef.current = nextHistory;
+      historyIdxRef.current = nextHistory.length - 1;
+    }
+  }, [ladder]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIdxRef.current > 0) {
+      historyIdxRef.current -= 1;
+      isUndoRedoAction.current = true;
+      const targetState = JSON.parse(historyRef.current[historyIdxRef.current]);
+      setLadder(targetState);
+    }
+  }, [setLadder]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIdxRef.current < historyRef.current.length - 1) {
+      historyIdxRef.current += 1;
+      isUndoRedoAction.current = true;
+      const targetState = JSON.parse(historyRef.current[historyIdxRef.current]);
+      setLadder(targetState);
+    }
+  }, [setLadder]);
+
+  // Available addresses list
+  const inputAddresses = problemInputs.length > 0
     ? problemInputs.map(i => ({ address: i.address, name: `${i.address} (${i.name})` }))
     : [
-        { address: 'X0', name: 'X0 (Start)' },
-        { address: 'X1', name: 'X1 (Stop)' },
+        { address: 'X0', name: 'X0 (Start PB)' },
+        { address: 'X1', name: 'X1 (Stop PB)' },
         { address: 'X2', name: 'X2 (Sensor)' },
-        { address: 'X3', name: 'X3 (Aux)' }
+        { address: 'X3', name: 'X3 (Limit Sw)' }
       ];
 
   const outputAddresses = problemOutputs.length > 0
@@ -40,20 +132,24 @@ export default function LadderEditor({
       ];
 
   const memoryAddresses = [
-    { address: 'M0', name: 'M0 (Aux Flag)' },
-    { address: 'M1', name: 'M1 (Aux Flag)' },
-    { address: 'M2', name: 'M2 (Aux Flag)' }
+    { address: 'M0', name: 'M0 (Aux Flag 0)' },
+    { address: 'M1', name: 'M1 (Aux Flag 1)' },
+    { address: 'M2', name: 'M2 (Aux Flag 2)' },
+    { address: 'M3', name: 'M3 (Aux Flag 3)' }
   ];
 
   const timerAddresses = [
     { address: 'T0', name: 'T0 (Timer 0)' },
     { address: 'T1', name: 'T1 (Timer 1)' },
-    { address: 'T2', name: 'T2 (Timer 2)' }
+    { address: 'T2', name: 'T2 (Timer 2)' },
+    { address: 'T3', name: 'T3 (Timer 3)' }
   ];
 
   const counterAddresses = [
     { address: 'C0', name: 'C0 (Counter 0)' },
-    { address: 'C1', name: 'C1 (Counter 1)' }
+    { address: 'C1', name: 'C1 (Counter 1)' },
+    { address: 'C2', name: 'C2 (Counter 2)' },
+    { address: 'C3', name: 'C3 (Counter 3)' }
   ];
 
   const allAddresses = [
@@ -64,20 +160,9 @@ export default function LadderEditor({
     ...counterAddresses
   ];
 
-  const coilAddresses = [
-    ...outputAddresses,
-    ...memoryAddresses
-  ];
-
-  const resetAddresses = [
-    ...outputAddresses,
-    ...memoryAddresses,
-    ...counterAddresses
-  ];
-
-  // Helper to get live state of an address
+  // Address Live State helper
   const getAddressState = (addr) => {
-    if (!plcState) return false;
+    if (!plcState || !addr) return false;
     if (addr.startsWith('X')) return Boolean(plcState.inputs?.[addr]);
     if (addr.startsWith('Y')) return Boolean(plcState.outputs?.[addr]);
     if (addr.startsWith('M')) return Boolean(plcState.memory?.[addr]);
@@ -86,7 +171,73 @@ export default function LadderEditor({
     return false;
   };
 
-  // Add a new empty rung
+  // Logic & Syntax Validation
+  useEffect(() => {
+    if (!ladder?.rungs) {
+      setValidationErrors([]);
+      return;
+    }
+
+    const errors = [];
+    ladder.rungs.forEach((rung, rIdx) => {
+      const elements = rung.elements || [];
+      if (elements.length === 0) {
+        errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: Empty rung with no instructions` });
+        return;
+      }
+
+      const hasOutput = elements.some(el => ['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type));
+      if (!hasOutput) {
+        errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: Missing output instruction (Coil, Set, Reset, Timer, or Counter)` });
+      }
+
+      elements.forEach((el, elIdx) => {
+        if (el.type === 'BRANCH') {
+          if (!el.branches || el.branches.length < 2) {
+            errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: Parallel branch has fewer than 2 branch paths` });
+          }
+        } else {
+          if (!el.address) {
+            errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: Instruction [${el.type}] has empty address` });
+          } else {
+            if (el.type === 'TON' && !el.address.startsWith('T')) {
+              errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: TON Timer address must start with 'T' (e.g. T0)` });
+            }
+            if (el.type === 'CTU' && !el.address.startsWith('C')) {
+              errors.push({ rung: rIdx, text: `Rung ${String(rIdx).padStart(4, '0')}: CTU Counter address must start with 'C' (e.g. C0)` });
+            }
+          }
+        }
+      });
+    });
+
+    setValidationErrors(errors);
+  }, [ladder]);
+
+  // Keyboard shortcut listener (Ctrl+Z, Ctrl+Y, Delete)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't intercept if user is typing in an input
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
+  // Rung Manipulation Handlers
   const handleAddRung = () => {
     const newRungs = [
       ...(ladder?.rungs || []),
@@ -103,18 +254,29 @@ export default function LadderEditor({
     setSelectedRungIdx(newRungs.length - 1);
   };
 
-  // Delete a rung
-  const handleDeleteRung = (rIdx, e) => {
-    e.stopPropagation();
+  const handleInsertRung = (targetIdx) => {
+    const newRungs = [...(ladder?.rungs || [])];
+    const newRung = {
+      id: `rung-${Date.now()}`,
+      comment: `New Rung`,
+      elements: [
+        { type: 'NO', address: inputAddresses[0]?.address || 'X0' },
+        { type: 'COIL', address: outputAddresses[0]?.address || 'Y0' }
+      ]
+    };
+    newRungs.splice(targetIdx + 1, 0, newRung);
+    setLadder({ rungs: newRungs });
+    setSelectedRungIdx(targetIdx + 1);
+  };
+
+  const handleDeleteRung = (rIdx) => {
     if ((ladder?.rungs?.length || 0) <= 1) return;
     const newRungs = ladder.rungs.filter((_, idx) => idx !== rIdx);
     setLadder({ rungs: newRungs });
     setSelectedRungIdx(Math.max(0, rIdx - 1));
   };
 
-  // Move rung up
-  const handleMoveRung = (rIdx, direction, e) => {
-    e.stopPropagation();
+  const handleMoveRung = (rIdx, direction) => {
     const newRungs = [...ladder.rungs];
     const targetIdx = rIdx + direction;
     if (targetIdx < 0 || targetIdx >= newRungs.length) return;
@@ -125,10 +287,19 @@ export default function LadderEditor({
     setSelectedRungIdx(targetIdx);
   };
 
-  // Add component to currently selected rung
+  const handleUpdateComment = (rIdx, newComment) => {
+    const newRungs = [...ladder.rungs];
+    newRungs[rIdx].comment = newComment;
+    setLadder({ rungs: newRungs });
+  };
+
+  // Add Component to selected rung
   const handleAddComponent = (type) => {
-    if (!ladder?.rungs || ladder.rungs.length === 0) return;
-    const rIdx = selectedRungIdx;
+    if (!ladder?.rungs || ladder.rungs.length === 0) {
+      handleAddRung();
+      return;
+    }
+    const rIdx = selectedRungIdx < ladder.rungs.length ? selectedRungIdx : 0;
     const rung = { ...ladder.rungs[rIdx] };
     const elements = [...(rung.elements || [])];
 
@@ -150,7 +321,7 @@ export default function LadderEditor({
       ...(type === 'CTU' ? { preset: 5 } : {})
     };
 
-    // If it's an output element (COIL, TON, CTU), place it at the end
+    // If it's an output element (COIL, TON, CTU), place at the end
     // Otherwise place before the output
     const outIdx = elements.findIndex(el => ['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type));
     if (outIdx >= 0 && !['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(type)) {
@@ -165,14 +336,16 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Add a parallel branch to the selected rung (for latching / seal-in)
+  // Add Parallel Branch to selected rung
   const handleAddBranch = () => {
-    if (!ladder?.rungs || ladder.rungs.length === 0) return;
-    const rIdx = selectedRungIdx;
+    if (!ladder?.rungs || ladder.rungs.length === 0) {
+      handleAddRung();
+      return;
+    }
+    const rIdx = selectedRungIdx < ladder.rungs.length ? selectedRungIdx : 0;
     const rung = { ...ladder.rungs[rIdx] };
     const elements = [...(rung.elements || [])];
 
-    // Create a parallel branch block
     const branchBlock = {
       type: 'BRANCH',
       branches: [
@@ -181,7 +354,6 @@ export default function LadderEditor({
       ]
     };
 
-    // Insert at beginning of rung
     elements.unshift(branchBlock);
     rung.elements = elements;
     const newRungs = [...ladder.rungs];
@@ -189,7 +361,7 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Update an element's property
+  // Update element properties
   const handleUpdateElement = (rIdx, elIdx, updates) => {
     const newRungs = [...ladder.rungs];
     const rung = { ...newRungs[rIdx] };
@@ -200,9 +372,8 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Delete an element
-  const handleDeleteElement = (rIdx, elIdx, e) => {
-    e.stopPropagation();
+  // Delete element
+  const handleDeleteElement = (rIdx, elIdx) => {
     const newRungs = [...ladder.rungs];
     const rung = { ...newRungs[rIdx] };
     rung.elements = rung.elements.filter((_, idx) => idx !== elIdx);
@@ -210,26 +381,8 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Update a sub-element inside a branch
-  const handleUpdateBranchElement = (rIdx, elIdx, bIdx, subIdx, updates) => {
-    const newRungs = [...ladder.rungs];
-    const rung = { ...newRungs[rIdx] };
-    const elements = [...rung.elements];
-    const branchEl = { ...elements[elIdx] };
-    const branches = [...branchEl.branches];
-    const subPath = [...branches[bIdx]];
-    subPath[subIdx] = { ...subPath[subIdx], ...updates };
-    branches[bIdx] = subPath;
-    branchEl.branches = branches;
-    elements[elIdx] = branchEl;
-    rung.elements = elements;
-    newRungs[rIdx] = rung;
-    setLadder({ rungs: newRungs });
-  };
-
-  // Add path to branch
-  const handleAddPathToBranch = (rIdx, elIdx, e) => {
-    e.stopPropagation();
+  // Branch Leg Handlers
+  const handleAddPathToBranch = (rIdx, elIdx) => {
     const newRungs = [...ladder.rungs];
     const rung = { ...newRungs[rIdx] };
     const elements = [...rung.elements];
@@ -244,9 +397,7 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Remove a path/leg from branch
-  const handleRemovePathFromBranch = (rIdx, elIdx, bIdx, e) => {
-    e.stopPropagation();
+  const handleRemovePathFromBranch = (rIdx, elIdx, bIdx) => {
     const newRungs = [...ladder.rungs];
     const rung = { ...newRungs[rIdx] };
     const elements = [...rung.elements];
@@ -259,9 +410,7 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
-  // Add a series contact inside a branch leg
-  const handleAddContactToBranchLeg = (rIdx, elIdx, bIdx, e) => {
-    e.stopPropagation();
+  const handleAddContactToBranchLeg = (rIdx, elIdx, bIdx) => {
     const newRungs = [...ladder.rungs];
     const rung = { ...newRungs[rIdx] };
     const elements = [...rung.elements];
@@ -278,611 +427,990 @@ export default function LadderEditor({
     setLadder({ rungs: newRungs });
   };
 
+  const handleUpdateBranchElement = (rIdx, elIdx, bIdx, subIdx, updates) => {
+    const newRungs = [...ladder.rungs];
+    const rung = { ...newRungs[rIdx] };
+    const elements = [...rung.elements];
+    const branchEl = { ...elements[elIdx] };
+    const branches = [...branchEl.branches];
+    const subPath = [...branches[bIdx]];
+    subPath[subIdx] = { ...subPath[subIdx], ...updates };
+    branches[bIdx] = subPath;
+    branchEl.branches = branches;
+    elements[elIdx] = branchEl;
+    rung.elements = elements;
+    newRungs[rIdx] = rung;
+    setLadder({ rungs: newRungs });
+  };
+
+  // Open property dialog for an element
+  const handleOpenDialog = (element, rIdx, elIdx, bIdx = null, subIdx = null) => {
+    setDialogState({
+      isOpen: true,
+      element,
+      rIdx,
+      elIdx,
+      bIdx,
+      subIdx
+    });
+  };
+
+  // Save handler from dialog
+  const handleDialogSave = (updates) => {
+    const { rIdx, elIdx, bIdx, subIdx } = dialogState;
+    if (bIdx !== null && subIdx !== null) {
+      handleUpdateBranchElement(rIdx, elIdx, bIdx, subIdx, updates);
+    } else {
+      handleUpdateElement(rIdx, elIdx, updates);
+    }
+  };
+
+  // Delete handler from dialog
+  const handleDialogDelete = () => {
+    const { rIdx, elIdx, bIdx, subIdx } = dialogState;
+    if (bIdx !== null && subIdx !== null) {
+      // Remove contact inside branch leg
+      const newRungs = [...ladder.rungs];
+      const rung = { ...newRungs[rIdx] };
+      const elements = [...rung.elements];
+      const branchEl = { ...elements[elIdx] };
+      const branches = [...branchEl.branches];
+      branches[bIdx] = branches[bIdx].filter((_, idx) => idx !== subIdx);
+      // If leg empty, remove leg
+      if (branches[bIdx].length === 0) {
+        branches.splice(bIdx, 1);
+      }
+      if (branches.length === 0) {
+        // Remove branch completely
+        elements.splice(elIdx, 1);
+      } else {
+        branchEl.branches = branches;
+        elements[elIdx] = branchEl;
+      }
+      rung.elements = elements;
+      newRungs[rIdx] = rung;
+      setLadder({ rungs: newRungs });
+    } else {
+      handleDeleteElement(rIdx, elIdx);
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0a0e17' }}>
-      {/* Component Palette Toolbar */}
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      background: 'var(--bg-primary, #ffffff)',
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
+      {/* 1. TOP ENGINEERING MENU & TOOLBAR (Classic Industrial PLC Style) */}
       <div style={{
-        padding: '10px 16px',
-        background: 'var(--bg-surface)',
+        background: 'var(--bg-surface, #ffffff)',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px'
+        flexDirection: 'column',
+        userSelect: 'none',
+        zIndex: 20
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginRight: '6px', textTransform: 'uppercase' }}>
-            Palette:
-          </span>
-          {COMPONENT_TYPES.map(comp => (
-            <button
-              key={comp.type}
-              onClick={() => handleAddComponent(comp.type)}
-              className="btn-secondary"
-              style={{
-                padding: '5px 10px',
-                fontSize: '12px',
-                fontFamily: 'var(--font-mono)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                border: '1px solid #27354f'
-              }}
-              title={comp.desc}
-              id={`palette-btn-${comp.type}`}
-            >
-              <span style={{ color: comp.type.includes('COIL') || comp.type === 'SET' || comp.type === 'RESET' ? '#38bdf8' : comp.type.startsWith('T') || comp.type.startsWith('C') ? '#f59e0b' : '#34d399' }}>
-                {comp.symbol}
-              </span>
-              <span>{comp.label}</span>
-            </button>
-          ))}
+        {/* Menu Bar: File, PLC, Ladder, Data Files, Tools */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '4px 14px',
+          borderBottom: '1px solid var(--border-subtle)',
+          fontSize: '11.5px',
+          fontFamily: 'var(--font-mono)',
+          background: 'var(--bg-card, #f8fafc)'
+        }}>
+          {/* Left Menus & Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+              <FileCode size={14} />
+              <span>ROUTINE: MainRoutine [LAD]</span>
+            </div>
 
-          <button
-            onClick={handleAddBranch}
-            className="btn-secondary"
-            style={{
-              padding: '5px 10px',
-              fontSize: '12px',
-              border: '1px solid #3b82f6',
-              color: '#60a5fa'
-            }}
-            title="Add Parallel Branch (OR Seal-In Logic)"
-            id="palette-btn-branch"
-          >
-            <GitBranch size={13} />
-            + Parallel Branch
-          </button>
+            <div style={{ height: '14px', width: '1px', background: 'var(--border-muted)' }} />
+
+            {/* PLC Control Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={() => setIsScanning && setIsScanning(true)}
+                style={{
+                  background: isScanning ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+                  border: isScanning ? '1px solid #16a34a' : '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: isScanning ? '#16a34a' : 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="RUN: Execute cyclic PLC scan loop"
+              >
+                <Play size={11} fill={isScanning ? '#16a34a' : 'none'} />
+                RUN
+              </button>
+
+              <button
+                onClick={() => setIsScanning && setIsScanning(false)}
+                style={{
+                  background: !isScanning ? 'rgba(234, 179, 8, 0.2)' : 'transparent',
+                  border: !isScanning ? '1px solid #ca8a04' : '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: !isScanning ? '#ca8a04' : 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="STOP: Halt cyclic execution"
+              >
+                <Square size={11} fill={!isScanning ? '#ca8a04' : 'none'} />
+                STOP
+              </button>
+
+              {onStepScan && (
+                <button
+                  onClick={onStepScan}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '3px',
+                    color: 'var(--text-secondary)',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Execute single PLC scan step"
+                >
+                  <StepForward size={11} />
+                  STEP
+                </button>
+              )}
+
+              {onResetPlc && (
+                <button
+                  onClick={onResetPlc}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '3px',
+                    color: 'var(--text-secondary)',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Reset controller memory and registers"
+                >
+                  <RotateCcw size={11} />
+                  RESET
+                </button>
+              )}
+            </div>
+
+            <div style={{ height: '14px', width: '1px', background: 'var(--border-muted)' }} />
+
+            {/* Data Files Shortcuts */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={() => setDataModalState({ isOpen: true, initialFile: 'T4' })}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Open Timer Data File (T4: EN, TT, DN, PRE, ACC)"
+              >
+                <Clock size={12} style={{ color: '#d97706' }} />
+                Timer File (T4)
+              </button>
+
+              <button
+                onClick={() => setDataModalState({ isOpen: true, initialFile: 'C5' })}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Open Counter Data File (C5: CU, CD, DN, PRE, ACC)"
+              >
+                <Hash size={12} style={{ color: '#0284c7' }} />
+                Counter File (C5)
+              </button>
+
+              <button
+                onClick={() => setDataModalState({ isOpen: true, initialFile: 'IO' })}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Open I/O Status Table (I:0 / O:0 channels)"
+              >
+                <Zap size={12} style={{ color: '#16a34a' }} />
+                I/O File
+              </button>
+
+              <button
+                onClick={() => setDataModalState({ isOpen: true, initialFile: 'N7' })}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '3px',
+                  color: 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Open Integer Register File (N7)"
+              >
+                <Layers size={12} style={{ color: '#8b5cf6' }} />
+                Integer File (N7)
+              </button>
+            </div>
+          </div>
+
+          {/* Right Tools: Undo/Redo & Zoom & Validation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Validation Badge */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowValidationPopover(!showValidationPopover)}
+                style={{
+                  background: validationErrors.length > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  border: validationErrors.length > 0 ? '1px solid #ef4444' : '1px solid #16a34a',
+                  borderRadius: '3px',
+                  color: validationErrors.length > 0 ? '#ef4444' : '#16a34a',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                {validationErrors.length > 0 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
+                <span>{validationErrors.length === 0 ? 'Logic Valid' : `${validationErrors.length} Issue(s)`}</span>
+              </button>
+
+              {/* Validation Errors Popover */}
+              {showValidationPopover && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '4px',
+                  width: '320px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-muted)',
+                  borderRadius: '6px',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                  padding: '10px 12px',
+                  zIndex: 999
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                    Rung Logic Diagnostics
+                  </div>
+                  {validationErrors.length === 0 ? (
+                    <div style={{ color: '#16a34a', fontSize: '11px' }}>
+                      ✓ All rungs comply with IEC-61131-3 syntax and have valid outputs.
+                    </div>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: '#ef4444', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {validationErrors.map((err, i) => (
+                        <li key={i}>{err.text}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ height: '14px', width: '1px', background: 'var(--border-muted)' }} />
+
+            {/* Undo / Redo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <button
+                onClick={handleUndo}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '3px 5px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={13} />
+              </button>
+
+              <button
+                onClick={handleRedo}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '3px 5px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={13} />
+              </button>
+            </div>
+
+            <div style={{ height: '14px', width: '1px', background: 'var(--border-muted)' }} />
+
+            {/* Zoom Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={() => setZoomLevel(prev => Math.max(75, prev - 10))}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '2px 4px'
+                }}
+                title="Zoom Out"
+              >
+                <ZoomOut size={13} />
+              </button>
+              <span style={{ fontSize: '11px', width: '38px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                {zoomLevel}%
+              </span>
+              <button
+                onClick={() => setZoomLevel(prev => Math.min(125, prev + 10))}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '2px 4px'
+                }}
+                title="Zoom In"
+              >
+                <ZoomIn size={13} />
+              </button>
+              <button
+                onClick={() => setZoomLevel(100)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: '2px 4px'
+                }}
+                title="Reset Zoom to 100%"
+              >
+                <Maximize2 size={11} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={handleAddRung}
-            className="btn-primary"
-            style={{ padding: '6px 14px', fontSize: '12.5px' }}
-            id="btn-add-rung"
-          >
-            <Plus size={14} />
-            Add Rung
-          </button>
+        {/* Quick Rung Bar: + Rung, + Parallel Branch, Rung Counter */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 14px',
+          background: 'var(--bg-surface)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handleAddRung}
+              className="btn-primary"
+              style={{
+                padding: '4px 12px',
+                fontSize: '11.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+              title="Add a new ladder rung at the end"
+            >
+              <Plus size={13} />
+              Add Rung
+            </button>
+
+            <button
+              onClick={handleAddBranch}
+              className="btn-secondary"
+              style={{
+                padding: '4px 12px',
+                fontSize: '11.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                border: '1px solid #0284c7',
+                color: '#0284c7'
+              }}
+              title="Add Parallel OR Branch to selected rung"
+            >
+              <GitBranch size={13} />
+              + Branch
+            </button>
+
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginLeft: '8px' }}>
+              Total: {ladder?.rungs?.length || 0} Rungs • Selected: Rung {String(selectedRungIdx).padStart(4, '0')}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+              Tip: Double-click or click any element to configure its address & symbol alias
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Visual Ladder Logic Diagram Container */}
+      {/* 2. SPLIT WORKSPACE: LADDER CANVAS (LEFT) + INSTRUCTION PALETTE (RIGHT) */}
       <div style={{
         flex: 1,
-        overflow: 'auto',
-        padding: '24px 20px',
+        display: 'flex',
+        overflow: 'hidden',
         position: 'relative'
       }}>
-        {/* Power Rails Background Info */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', padding: '0 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 'bold' }}>
-            <Zap size={13} />
-            +24V DC POWER RAIL (L1)
-          </div>
-          <div style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 'bold' }}>
-            0V DC RETURN RAIL (N)
+        {/* LADDER CANVAS (Full Width Scrollable Viewport) */}
+        <div style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '20px 24px',
+          position: 'relative',
+          background: 'var(--bg-primary, #ffffff)'
+        }}>
+          {/* Zoom Wrapper */}
+          <div style={{
+            transform: `scale(${zoomLevel / 100})`,
+            transformOrigin: 'top left',
+            minWidth: '780px',
+            transition: 'transform 0.1s ease-out'
+          }}>
+            {/* Top Power Rails Header Indicator */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '12px',
+              padding: '0 8px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              userSelect: 'none'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--rail-power, #ef4444)' }}>
+                <Zap size={13} />
+                <span>+24V DC POWER RAIL (L1)</span>
+              </div>
+              <div style={{ color: 'var(--rail-neutral, #0284c7)' }}>
+                <span>0V DC RETURN RAIL (L2 / N)</span>
+              </div>
+            </div>
+
+            {/* Schematic Rails & Rungs Container */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              position: 'relative',
+              padding: '0 20px'
+            }}>
+              {/* Left Vertical Power Bus Rail */}
+              <div style={{
+                position: 'absolute',
+                left: '12px',
+                top: 0,
+                bottom: 0,
+                width: '6px',
+                background: 'var(--rail-power, #ef4444)',
+                boxShadow: isScanning ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
+                borderRadius: '3px',
+                zIndex: 10
+              }} />
+
+              {/* Right Vertical Return Bus Rail */}
+              <div style={{
+                position: 'absolute',
+                right: '12px',
+                top: 0,
+                bottom: 0,
+                width: '6px',
+                background: 'var(--rail-neutral, #0284c7)',
+                boxShadow: isScanning ? '0 0 10px rgba(2, 132, 199, 0.4)' : 'none',
+                borderRadius: '3px',
+                zIndex: 10
+              }} />
+
+              {(!ladder?.rungs || ladder.rungs.length === 0) ? (
+                <div style={{
+                  margin: '60px auto',
+                  textAlign: 'center',
+                  padding: '36px',
+                  border: '2px dashed var(--border-muted)',
+                  borderRadius: '8px',
+                  maxWidth: '420px',
+                  background: 'var(--bg-surface)'
+                }}>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '13px' }}>
+                    No rungs present in current ladder routine.
+                  </p>
+                  <button className="btn-primary" onClick={handleAddRung}>
+                    <Plus size={14} /> Create First Rung
+                  </button>
+                </div>
+              ) : (
+                ladder.rungs.map((rung, rIdx) => {
+                  const evalInfo = rungStates.find(rs => rs.rungIndex === rIdx);
+                  const isRungEnergized = evalInfo ? evalInfo.energized : false;
+                  const isSelected = selectedRungIdx === rIdx;
+
+                  return (
+                    <LadderRung
+                      key={rung.id || rIdx}
+                      rung={rung}
+                      rIdx={rIdx}
+                      isSelected={isSelected}
+                      onSelect={() => setSelectedRungIdx(rIdx)}
+                      isRungEnergized={isRungEnergized}
+                      allAddresses={allAddresses}
+                      getAddressState={getAddressState}
+                      onUpdateElement={handleUpdateElement}
+                      onDeleteElement={handleDeleteElement}
+                      onOpenDialog={handleOpenDialog}
+                      onMoveRung={handleMoveRung}
+                      onDeleteRung={handleDeleteRung}
+                      onInsertRung={handleInsertRung}
+                      totalRungs={ladder.rungs.length}
+                      onUpdateComment={handleUpdateComment}
+                      onAddElementToRung={handleAddComponent}
+                      onAddPathToBranch={handleAddPathToBranch}
+                      onRemovePathFromBranch={handleRemovePathFromBranch}
+                      onAddContactToBranchLeg={handleAddContactToBranchLeg}
+                      onUpdateBranchElement={handleUpdateBranchElement}
+                      plcState={plcState}
+                    />
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 
-        {/* The Ladder Rungs */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-          {/* Left Vertical Power Rail */}
-          <div style={{
-            position: 'absolute',
-            left: '20px',
-            top: 0,
-            bottom: 0,
-            width: '6px',
-            background: 'linear-gradient(to bottom, #ef4444, #dc2626)',
-            boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)',
-            borderRadius: '3px',
-            zIndex: 10
-          }} />
+        {/* RIGHT DOCKABLE INSTRUCTION PALETTE */}
+        <div style={{
+          width: isPaletteCollapsed ? '28px' : '230px',
+          transition: 'width 0.2s ease',
+          background: 'var(--bg-surface, #ffffff)',
+          borderLeft: '1px solid var(--border-subtle)',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 15,
+          position: 'relative'
+        }}>
+          {/* Collapse / Expand Toggle Button */}
+          <button
+            onClick={() => setIsPaletteCollapsed(!isPaletteCollapsed)}
+            style={{
+              position: 'absolute',
+              left: '-12px',
+              top: '12px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-muted)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+              zIndex: 30
+            }}
+            title={isPaletteCollapsed ? 'Expand Instruction Palette' : 'Collapse Instruction Palette'}
+          >
+            {isPaletteCollapsed ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
+          </button>
 
-          {/* Right Vertical Power Rail */}
-          <div style={{
-            position: 'absolute',
-            right: '20px',
-            top: 0,
-            bottom: 0,
-            width: '6px',
-            background: 'linear-gradient(to bottom, #3b82f6, #0284c7)',
-            boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
-            borderRadius: '3px',
-            zIndex: 10
-          }} />
+          {!isPaletteCollapsed && (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+              {/* Palette Header */}
+              <div style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.5px' }}>
+                  INSTRUCTION PALETTE
+                </span>
+              </div>
 
-          {(!ladder?.rungs || ladder.rungs.length === 0) ? (
-            <div style={{
-              margin: '40px auto',
-              textAlign: 'center',
-              padding: '30px',
-              border: '2px dashed var(--border-muted)',
-              borderRadius: 'var(--radius-md)',
-              maxWidth: '400px'
-            }}>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '12px' }}>No rungs in ladder logic</p>
-              <button className="btn-primary" onClick={handleAddRung}>
-                <Plus size={14} /> Create First Rung
-              </button>
-            </div>
-          ) : (
-            ladder.rungs.map((rung, rIdx) => {
-              const evalInfo = rungStates.find(rs => rs.rungIndex === rIdx);
-              const isRungEnergized = evalInfo ? evalInfo.energized : false;
-              const isSelected = selectedRungIdx === rIdx;
+              {/* Palette Category Tabs */}
+              <div style={{
+                display: 'flex',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)',
+                padding: '4px',
+                gap: '2px'
+              }}>
+                {[
+                  { id: 'bit', label: 'Bit Logic' },
+                  { id: 'timer', label: 'Timers' },
+                  { id: 'compare', label: 'Cmp/Math' }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setPaletteTab(t.id)}
+                    style={{
+                      flex: 1,
+                      padding: '4px 6px',
+                      fontSize: '10.5px',
+                      fontWeight: '600',
+                      border: 'none',
+                      borderRadius: '3px',
+                      background: paletteTab === t.id ? 'var(--bg-card)' : 'transparent',
+                      color: paletteTab === t.id ? '#0284c7' : 'var(--text-muted)',
+                      borderBottom: paletteTab === t.id ? '2px solid #0284c7' : '2px solid transparent',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
-              return (
-                <div
-                  key={rung.id || rIdx}
-                  onClick={() => setSelectedRungIdx(rIdx)}
-                  style={{
-                    marginLeft: '26px',
-                    marginRight: '26px',
-                    background: isSelected ? 'rgba(30, 41, 59, 0.4)' : 'rgba(15, 23, 42, 0.25)',
-                    border: isSelected ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid transparent',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '14px 16px 14px 16px',
-                    transition: 'all 0.15s ease',
-                    position: 'relative'
-                  }}
-                  id={`ladder-rung-${rIdx}`}
-                >
-                  {/* Rung Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
+              {/* Palette Items List */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* 1. BIT LOGIC TAB */}
+                {paletteTab === 'bit' && (
+                  <>
+                    <button
+                      onClick={() => handleAddComponent('NO')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Examine if Closed (Normally Open Contact)"
+                    >
+                      <span style={{ color: '#16a34a', fontWeight: 'bold' }}>—[ ]—</span>
+                      <span>NO Contact</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleAddComponent('NC')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Examine if Open (Normally Closed Contact)"
+                    >
+                      <span style={{ color: '#16a34a', fontWeight: 'bold' }}>—[/]—</span>
+                      <span>NC Contact</span>
+                    </button>
+
+                    <button
+                      onClick={handleAddBranch}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '11px',
-                        background: isRungEnergized ? 'rgba(0, 255, 136, 0.2)' : 'var(--bg-card)',
-                        color: isRungEnergized ? '#00ff88' : 'var(--text-muted)',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: isRungEnergized ? '1px solid rgba(0, 255, 136, 0.4)' : '1px solid var(--border-subtle)',
-                        fontWeight: 'bold'
-                      }}>
-                        RUNG {rIdx}
-                      </span>
-                      <input
-                        type="text"
-                        value={rung.comment || ''}
-                        placeholder="Rung comment / description..."
-                        onChange={(e) => {
-                          const newRungs = [...ladder.rungs];
-                          newRungs[rIdx].comment = e.target.value;
-                          setLadder({ rungs: newRungs });
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--text-secondary)',
-                          fontSize: '12px',
-                          padding: '2px 6px',
-                          width: '260px'
-                        }}
-                      />
-                    </div>
+                        border: '1px solid #0284c7',
+                        color: '#0284c7'
+                      }}
+                      title="Add Parallel OR Branch (Seal-In Circuit)"
+                    >
+                      <span style={{ fontWeight: 'bold' }}>—[+]—</span>
+                      <span>Parallel Branch</span>
+                    </button>
 
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button
-                        onClick={(e) => handleMoveRung(rIdx, -1, e)}
-                        disabled={rIdx === 0}
-                        style={{ padding: '3px 6px', color: 'var(--text-muted)' }}
-                        title="Move Rung Up"
-                      >
-                        <ArrowUp size={13} />
-                      </button>
-                      <button
-                        onClick={(e) => handleMoveRung(rIdx, 1, e)}
-                        disabled={rIdx === ladder.rungs.length - 1}
-                        style={{ padding: '3px 6px', color: 'var(--text-muted)' }}
-                        title="Move Rung Down"
-                      >
-                        <ArrowDown size={13} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteRung(rIdx, e)}
-                        style={{ padding: '3px 6px', color: '#ef4444' }}
-                        title="Delete Rung"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
+                    <button
+                      onClick={() => handleAddComponent('COIL')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Output Energize Coil"
+                    >
+                      <span style={{ color: '#0284c7', fontWeight: 'bold' }}>—( )—</span>
+                      <span>Output Coil</span>
+                    </button>
 
-                  {/* Horizontal Wire Line and Components */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: '76px',
-                    position: 'relative',
-                    padding: '0 8px'
-                  }}>
-                    {/* Continuous Background Wire */}
+                    <button
+                      onClick={() => handleAddComponent('SET')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Output Latch (Set Bit TRUE until Unlatched)"
+                    >
+                      <span style={{ color: '#0284c7', fontWeight: 'bold' }}>—(L)—</span>
+                      <span>Latch (Set)</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleAddComponent('RESET')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Output Unlatch (Reset Bit to 0)"
+                    >
+                      <span style={{ color: '#0284c7', fontWeight: 'bold' }}>—(U)—</span>
+                      <span>Unlatch (Reset)</span>
+                    </button>
+                  </>
+                )}
+
+                {/* 2. TIMERS & COUNTERS TAB */}
+                {paletteTab === 'timer' && (
+                  <>
+                    <button
+                      onClick={() => handleAddComponent('TON')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Timer On Delay (Accumulates time while rung is energized)"
+                    >
+                      <span style={{ color: '#d97706', fontWeight: 'bold' }}>[TON]</span>
+                      <span>Timer On Delay</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleAddComponent('CTU')}
+                      className="btn-secondary"
+                      style={{
+                        padding: '8px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                      title="Count Up (Increments accumulator on rising edge)"
+                    >
+                      <span style={{ color: '#0284c7', fontWeight: 'bold' }}>[CTU]</span>
+                      <span>Count Up</span>
+                    </button>
+
+                    {/* Industrial Coming Soon blocks */}
                     <div style={{
-                      position: 'absolute',
-                      left: 0,
-                      right: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      height: '3px',
-                      background: isRungEnergized ? 'var(--live-wire)' : 'var(--dead-wire)',
-                      boxShadow: isRungEnergized ? '0 0 10px var(--live-wire-glow)' : 'none',
-                      transition: 'all 0.2s ease',
-                      zIndex: 1
-                    }} />
-
-                    {/* Components along this rung */}
-                    <div style={{
+                      padding: '8px 10px',
+                      background: 'var(--bg-card)',
+                      borderRadius: '5px',
+                      border: '1px dashed var(--border-muted)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '18px',
-                      zIndex: 2,
-                      width: '100%',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      fontSize: '11px',
+                      color: 'var(--text-dim)'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                        {rung.elements?.map((el, elIdx) => {
-                          if (['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type)) {
-                            return null; // Rendered at the right side
-                          }
-
-                          if (el.type === 'BRANCH') {
-                            // Parallel Seal-In Branch Rendering
-                            return (
-                              <div
-                                key={elIdx}
-                                style={{
-                                  background: 'rgba(13, 18, 29, 0.95)',
-                                  border: '1px solid rgba(59, 130, 246, 0.4)',
-                                  borderRadius: '8px',
-                                  padding: '8px 12px',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '8px',
-                                  position: 'relative'
-                                }}
-                              >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                                  <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: '#60a5fa' }}>
-                                    PARALLEL OR
-                                  </span>
-                                  <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button
-                                      onClick={(e) => handleAddPathToBranch(rIdx, elIdx, e)}
-                                      style={{ color: '#38bdf8', fontSize: '10px', background: 'rgba(56, 189, 248, 0.1)', padding: '1px 6px', borderRadius: '3px' }}
-                                      title="Add parallel branch leg"
-                                    >
-                                      + leg
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleDeleteElement(rIdx, elIdx, e)}
-                                      style={{ color: '#ef4444', fontSize: '11px', padding: '0 4px' }}
-                                      title="Delete branch"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {el.branches?.map((branchElements, bIdx) => (
-                                  <div
-                                    key={bIdx}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '8px',
-                                      padding: '4px 6px',
-                                      borderLeft: '2px solid #3b82f6',
-                                      background: 'rgba(255, 255, 255, 0.02)',
-                                      borderRadius: '0 4px 4px 0'
-                                    }}
-                                  >
-                                    {branchElements.map((subEl, subIdx) => {
-                                      const rawVal = getAddressState(subEl.address);
-                                      const isConducting = subEl.type === 'NO' ? rawVal : !rawVal;
-
-                                      return (
-                                        <div
-                                          key={subIdx}
-                                          style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            background: isConducting ? 'rgba(0, 255, 136, 0.15)' : 'var(--bg-card)',
-                                            border: isConducting ? '1px solid #00ff88' : '1px solid var(--border-muted)',
-                                            borderRadius: '6px',
-                                            padding: '4px 8px'
-                                          }}
-                                        >
-                                          <select
-                                            value={subEl.type}
-                                            onChange={(e) => handleUpdateBranchElement(rIdx, elIdx, bIdx, subIdx, { type: e.target.value })}
-                                            style={{
-                                              padding: '3px 6px',
-                                              fontSize: '11px',
-                                              fontFamily: 'var(--font-mono)',
-                                              backgroundColor: 'var(--bg-surface)',
-                                              color: 'var(--text-primary)',
-                                              border: '1px solid var(--border-muted)',
-                                              borderRadius: '4px',
-                                              cursor: 'pointer'
-                                            }}
-                                          >
-                                            <option value="NO" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[ ]- NO</option>
-                                            <option value="NC" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[/]- NC</option>
-                                          </select>
-
-                                          <select
-                                            value={subEl.address}
-                                            onChange={(e) => handleUpdateBranchElement(rIdx, elIdx, bIdx, subIdx, { address: e.target.value })}
-                                            style={{
-                                              padding: '3px 6px',
-                                              fontSize: '11px',
-                                              fontFamily: 'var(--font-mono)',
-                                              fontWeight: 'bold',
-                                              backgroundColor: 'var(--bg-surface)',
-                                              color: isConducting ? 'var(--live-wire)' : 'var(--text-primary)',
-                                              border: isConducting ? '1px solid var(--live-wire)' : '1px solid var(--border-muted)',
-                                              borderRadius: '4px',
-                                              cursor: 'pointer'
-                                            }}
-                                          >
-                                            {allAddresses.map(addr => (
-                                              <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
-                                                {addr.name}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                      );
-                                    })}
-
-                                    <button
-                                      onClick={(e) => handleAddContactToBranchLeg(rIdx, elIdx, bIdx, e)}
-                                      style={{ color: '#38bdf8', fontSize: '10px', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 5px', borderRadius: '3px' }}
-                                      title="Add series contact in this branch leg"
-                                    >
-                                      + contact
-                                    </button>
-
-                                    {el.branches.length > 1 && (
-                                      <button
-                                        onClick={(e) => handleRemovePathFromBranch(rIdx, elIdx, bIdx, e)}
-                                        style={{ color: '#94a3b8', fontSize: '11px', padding: '0 3px' }}
-                                        title="Remove this branch leg"
-                                      >
-                                        ×
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }
-
-                          // Series Contact (NO or NC)
-                          const rawVal = getAddressState(el.address);
-                          const isConducting = el.type === 'NO' ? rawVal : !rawVal;
-
-                          return (
-                            <div
-                              key={elIdx}
-                              style={{
-                                background: isConducting ? 'rgba(0, 255, 136, 0.12)' : 'var(--bg-surface)',
-                                border: isConducting ? '1px solid var(--live-wire)' : '1px solid var(--border-muted)',
-                                boxShadow: isConducting ? '0 0 10px rgba(0, 255, 136, 0.3)' : 'none',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                position: 'relative'
-                              }}
-                            >
-                              <select
-                                value={el.type}
-                                onChange={(e) => handleUpdateElement(rIdx, elIdx, { type: e.target.value })}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '11px',
-                                  fontFamily: 'var(--font-mono)',
-                                  backgroundColor: 'var(--bg-surface)',
-                                  color: 'var(--text-primary)',
-                                  border: '1px solid var(--border-muted)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <option value="NO" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[ ]- NO</option>
-                                <option value="NC" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-[/]- NC</option>
-                              </select>
-
-                              <select
-                                value={el.address}
-                                onChange={(e) => handleUpdateElement(rIdx, elIdx, { address: e.target.value })}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '11px',
-                                  fontFamily: 'var(--font-mono)',
-                                  fontWeight: 'bold',
-                                  backgroundColor: 'var(--bg-surface)',
-                                  color: isConducting ? 'var(--live-wire)' : 'var(--text-primary)',
-                                  border: isConducting ? '1px solid var(--live-wire)' : '1px solid var(--border-muted)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                {allAddresses.map(addr => (
-                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
-                                    {addr.name}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <button
-                                onClick={(e) => handleDeleteElement(rIdx, elIdx, e)}
-                                style={{ color: '#94a3b8', fontSize: '12px', padding: '0 2px' }}
-                                title="Delete element"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right End: Output Elements (Coils, TON, CTU) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {rung.elements?.map((el, elIdx) => {
-                          if (!['COIL', 'SET', 'RESET', 'TON', 'CTU'].includes(el.type)) {
-                            return null;
-                          }
-
-                          const isOutputEnergized = isRungEnergized;
-
-                          return (
-                            <div
-                              key={elIdx}
-                              style={{
-                                background: isOutputEnergized ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-surface)',
-                                border: isOutputEnergized ? '1px solid #38bdf8' : '1px solid var(--border-muted)',
-                                boxShadow: isOutputEnergized ? '0 0 12px rgba(56, 189, 248, 0.4)' : 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                              }}
-                            >
-                              <select
-                                value={el.type}
-                                onChange={(e) => {
-                                  const newType = e.target.value;
-                                  const updates = { type: newType };
-                                  if (newType === 'TON') {
-                                    if (!el.address || !el.address.startsWith('T')) {
-                                      updates.address = timerAddresses[0]?.address || 'T0';
-                                    }
-                                    if (!el.preset) updates.preset = 3000;
-                                  } else if (newType === 'CTU') {
-                                    if (!el.address || !el.address.startsWith('C')) {
-                                      updates.address = counterAddresses[0]?.address || 'C0';
-                                    }
-                                    if (!el.preset) updates.preset = 5;
-                                  } else if (newType === 'RESET') {
-                                    if (!el.address || (!el.address.startsWith('Y') && !el.address.startsWith('M') && !el.address.startsWith('C'))) {
-                                      updates.address = outputAddresses[0]?.address || 'Y0';
-                                    }
-                                  } else {
-                                    // COIL or SET
-                                    if (!el.address || (!el.address.startsWith('Y') && !el.address.startsWith('M'))) {
-                                      updates.address = outputAddresses[0]?.address || 'Y0';
-                                    }
-                                  }
-                                  handleUpdateElement(rIdx, elIdx, updates);
-                                }}
-                                style={{
-                                  padding: '4px 8px',
-                                  fontSize: '11px',
-                                  fontFamily: 'var(--font-mono)',
-                                  fontWeight: 'bold',
-                                  backgroundColor: 'var(--bg-surface)',
-                                  color: 'var(--text-primary)',
-                                  border: '1px solid var(--border-muted)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <option value="COIL" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-( )- COIL</option>
-                                <option value="SET" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-(S)- SET</option>
-                                <option value="RESET" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>-(R)- RESET</option>
-                                <option value="TON" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>[TON] TIMER</option>
-                                <option value="CTU" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>[CTU] COUNTER</option>
-                              </select>
-
-                              <select
-                                value={el.address}
-                                onChange={(e) => handleUpdateElement(rIdx, elIdx, { address: e.target.value })}
-                                style={{
-                                  padding: '4px 8px',
-                                  fontSize: '11px',
-                                  fontFamily: 'var(--font-mono)',
-                                  fontWeight: 'bold',
-                                  backgroundColor: 'var(--bg-surface)',
-                                  color: isOutputEnergized ? 'var(--plc-cyan)' : 'var(--text-primary)',
-                                  border: isOutputEnergized ? '1px solid var(--plc-cyan)' : '1px solid var(--border-muted)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                {(el.type === 'TON' 
-                                  ? timerAddresses 
-                                  : el.type === 'CTU' 
-                                  ? counterAddresses 
-                                  : el.type === 'RESET' 
-                                  ? resetAddresses 
-                                  : coilAddresses
-                                ).map(addr => (
-                                  <option key={addr.address} value={addr.address} style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
-                                    {addr.name}
-                                  </option>
-                                ))}
-                              </select>
-
-                              {/* Preset input for TON and CTU */}
-                              {el.type === 'TON' && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px' }}>
-                                  <span style={{ color: 'var(--text-muted)' }}>PRE:</span>
-                                  <input
-                                    type="number"
-                                    min="100"
-                                    max="30000"
-                                    step="500"
-                                    value={el.preset || 3000}
-                                    onChange={(e) => handleUpdateElement(rIdx, elIdx, { preset: Number(e.target.value) })}
-                                    style={{ width: '65px', padding: '2px 4px', fontSize: '11px' }}
-                                  />
-                                  <span style={{ color: 'var(--text-muted)' }}>ms</span>
-                                </div>
-                              )}
-
-                              {el.type === 'CTU' && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px' }}>
-                                  <span style={{ color: 'var(--text-muted)' }}>PRE:</span>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="100"
-                                    value={el.preset || 5}
-                                    onChange={(e) => handleUpdateElement(rIdx, elIdx, { preset: Number(e.target.value) })}
-                                    style={{ width: '50px', padding: '2px 4px', fontSize: '11px' }}
-                                  />
-                                </div>
-                              )}
-
-                              <button
-                                onClick={(e) => handleDeleteElement(rIdx, elIdx, e)}
-                                style={{ color: '#94a3b8', fontSize: '12px', padding: '0 2px' }}
-                                title="Delete output"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <span>[TOF] Off-Delay</span>
+                      <span style={{ fontSize: '9px', background: 'rgba(100, 116, 139, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
+                        Soon
+                      </span>
                     </div>
+
+                    <div style={{
+                      padding: '8px 10px',
+                      background: 'var(--bg-card)',
+                      borderRadius: '5px',
+                      border: '1px dashed var(--border-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '11px',
+                      color: 'var(--text-dim)'
+                    }}>
+                      <span>[CTD] Count Down</span>
+                      <span style={{ fontSize: '9px', background: 'rgba(100, 116, 139, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
+                        Soon
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* 3. COMPARE & MATH TAB */}
+                {paletteTab === 'compare' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '4px' }}>
+                      IEC-61131-3 Function Blocks
+                    </div>
+
+                    {['EQU (Equal)', 'NEQ (Not Equal)', 'GRT (Greater Than)', 'LES (Less Than)', 'ADD (Math Add)', 'SUB (Subtract)', 'MOV (Move Register)'].map(item => (
+                      <div
+                        key={item}
+                        style={{
+                          padding: '7px 10px',
+                          background: 'var(--bg-card)',
+                          borderRadius: '4px',
+                          border: '1px dashed var(--border-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '11px',
+                          color: 'var(--text-dim)'
+                        }}
+                      >
+                        <span>{item}</span>
+                        <span style={{ fontSize: '9px', background: 'rgba(100, 116, 139, 0.15)', padding: '1px 4px', borderRadius: '3px' }}>
+                          Coming Soon
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              );
-            })
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
+
+      {/* 3. BOTTOM INDUSTRIAL STATUS BAR */}
+      <div style={{
+        height: '28px',
+        background: 'var(--bg-card)',
+        borderTop: '1px solid var(--border-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 14px',
+        fontSize: '11px',
+        fontFamily: 'var(--font-mono)',
+        color: 'var(--text-muted)',
+        userSelect: 'none',
+        zIndex: 20
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: isScanning ? '#16a34a' : '#ca8a04',
+              boxShadow: isScanning ? '0 0 6px #16a34a' : 'none'
+            }} />
+            <strong style={{ color: isScanning ? '#16a34a' : '#ca8a04' }}>
+              PLC {isScanning ? 'RUN' : 'STOP'}
+            </strong>
+          </div>
+
+          <span>CYCLE: 50 ms (20 Hz)</span>
+          <span>HARDWARE: V-PLC 5000 SER. B</span>
+          <span>RUNGS: {ladder?.rungs?.length || 0}</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span>FOCUS: RUNG {String(selectedRungIdx).padStart(4, '0')}</span>
+          <span style={{ color: validationErrors.length === 0 ? '#16a34a' : '#ef4444' }}>
+            {validationErrors.length === 0 ? 'SYNTAX: 0 ERRORS' : `SYNTAX: ${validationErrors.length} ERRORS`}
+          </span>
+        </div>
+      </div>
+
+      {/* Instruction Configuration Dialog Modal */}
+      <InstructionDialog
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState(prev => ({ ...prev, isOpen: false }))}
+        element={dialogState.element}
+        rIdx={dialogState.rIdx}
+        elIdx={dialogState.elIdx}
+        bIdx={dialogState.bIdx}
+        subIdx={dialogState.subIdx}
+        onSave={handleDialogSave}
+        onDelete={handleDialogDelete}
+        allAddresses={allAddresses}
+        plcState={plcState}
+      />
+
+      {/* Data Files Table Modal */}
+      <DataFilesModal
+        isOpen={dataModalState.isOpen}
+        onClose={() => setDataModalState(prev => ({ ...prev, isOpen: false }))}
+        initialFile={dataModalState.initialFile}
+        plcState={plcState}
+        problemInputs={problemInputs}
+        problemOutputs={problemOutputs}
+      />
     </div>
   );
 }

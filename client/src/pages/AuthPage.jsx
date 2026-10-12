@@ -113,7 +113,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
             <span style={{ fontFamily: 'var(--font-heading)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-primary)' }}>
               PLC LOGIC ARENA
             </span>
-            <span style={{ fontSize: '10px', color: 'var(--plc-cyan)', fontFamily: 'var(--font-mono)', background: 'rgba(6,182,212,0.15)', padding: '2px 6px', borderRadius: '10px' }}>
+            <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               v2.4
             </span>
           </div>
@@ -174,7 +174,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
               }}
               id="tab-login-mode"
             >
-              <Lock size={14} color={mode === 'login' ? 'var(--plc-cyan)' : 'currentColor'} />
+              <Lock size={14} color="currentColor" />
               <span>Sign In</span>
             </button>
 
@@ -198,7 +198,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
               }}
               id="tab-register-mode"
             >
-              <GraduationCap size={15} color={mode === 'register' ? 'var(--live-wire)' : 'currentColor'} />
+              <GraduationCap size={15} color="currentColor" />
               <span>Register as Student</span>
             </button>
           </div>
@@ -364,8 +364,8 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 </div>
 
                 <div style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '10px 14px',
                   marginBottom: '20px',
@@ -373,9 +373,9 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                   alignItems: 'center',
                   gap: '10px'
                 }}>
-                  <GraduationCap size={18} color="#10b981" />
+                  <GraduationCap size={18} color="var(--live-wire)" />
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Assigned Role: <strong style={{ color: '#10b981' }}>Student Competitor</strong>
+                    Assigned Role: <strong style={{ color: 'var(--live-wire)' }}>Student Competitor</strong>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grants access to Student Dashboard, PLC Virtual Execution & Leaderboard.</div>
                   </div>
                 </div>
@@ -391,8 +391,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 height: '44px',
                 justifyContent: 'center',
                 fontSize: '14px',
-                fontWeight: '600',
-                boxShadow: '0 4px 14px rgba(6, 182, 212, 0.3)'
+                fontWeight: '600'
               }}
               id="btn-auth-submit"
             >
@@ -417,7 +416,7 @@ export default function AuthPage({ initialMode = 'login', onModeChange, onAuthSu
                 onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
                 style={{
                   fontSize: '13px',
-                  color: 'var(--plc-cyan)',
+                  color: 'var(--text-primary)',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',

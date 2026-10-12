@@ -6,7 +6,7 @@ export default function Docs() {
     <div style={{ flex: 1, padding: '36px 28px', maxWidth: '960px', margin: '0 auto', width: '100%' }}>
       {/* Title */}
       <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
           <BookOpen size={12} />
           IEC 61131-3 REFERENCE GUIDE
         </div>
@@ -22,7 +22,7 @@ export default function Docs() {
         {/* Contacts Section */}
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={18} color="var(--plc-cyan)" /> Core Contacts & Power Flow
+            <Zap size={18} color="var(--text-primary)" /> Core Contacts & Power Flow
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

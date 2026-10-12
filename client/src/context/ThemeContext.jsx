@@ -2,35 +2,36 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export const THEMES = [
   {
-    id: 'white-brown',
-    name: 'Mocha & Pure White',
-    tagline: 'White Background & Espresso Brown Navbar',
-    category: 'light',
-    icon: 'Coffee',
+    id: 'pro-monochrome-dark',
+    name: 'Pro Studio Black',
+    tagline: 'Professional Industrial Black & Crisp White',
+    category: 'dark',
+    icon: 'Terminal',
     colors: {
-      bg: '#ffffff',
-      surface: '#ffffff',
-      accent: '#15803d',
-      cyan: '#b45309',
-      navbar: '#3c2415',
-      text: '#1c1917'
+      bg: '#09090b',
+      surface: '#121215',
+      accent: '#22c55e',
+      cyan: '#ffffff',
+      navbar: '#09090b',
+      text: '#fafafa'
     },
-    description: 'Crisp pure white background with an elegant espresso brown navigation bar and sharp industrial contrast.'
+    description: 'Ultra-clean, high-contrast engineering dark mode with matte black surfaces, crisp white typography, and industrial signal green.'
   },
   {
-    id: 'cyber-obsidian',
-    name: 'Cyber Obsidian',
-    tagline: 'Cyberpunk Dark & Neon Green',
-    category: 'dark',
-    icon: 'Zap',
+    id: 'pro-monochrome-light',
+    name: 'Pro Precision White',
+    tagline: 'Crisp Daylight White & Solid Matte Black',
+    category: 'light',
+    icon: 'Sun',
     colors: {
-      bg: '#07090e',
-      surface: '#0d121d',
-      accent: '#00ff88',
-      cyan: '#06b6d4',
-      text: '#f8fafc'
+      bg: '#ffffff',
+      surface: '#fafafa',
+      accent: '#16a34a',
+      cyan: '#09090b',
+      navbar: '#09090b',
+      text: '#09090b'
     },
-    description: 'High-contrast dark obsidian with glowing neon emerald conductors and cyan telemetry.'
+    description: 'Crisp, high-readability architectural white layout with sharp dark zinc borders and high-contrast drafting lines.'
   },
   {
     id: 'blueprint-cad',
@@ -43,6 +44,7 @@ export const THEMES = [
       surface: '#0a1f3d',
       accent: '#38bdf8',
       cyan: '#7dd3fc',
+      navbar: '#06152b',
       text: '#f0f9ff'
     },
     description: 'Authentic AutoCAD / EPLAN electrical schematic blueprint with precision technical drafting lines.'
@@ -58,6 +60,7 @@ export const THEMES = [
       surface: '#181a1f',
       accent: '#f59e0b',
       cyan: '#fbbf24',
+      navbar: '#121316',
       text: '#fef3c7'
     },
     description: 'Heavy machinery control room aesthetics with graphite steel and warm tungsten amber glow.'
@@ -73,39 +76,26 @@ export const THEMES = [
       surface: '#07140a',
       accent: '#00ff66',
       cyan: '#10b981',
+      navbar: '#030a05',
       text: '#ecfdf5'
     },
     description: 'Retro UNIX command terminal with luminous phosphor green and diagnostic scanlines.'
   },
   {
-    id: 'synthwave-nebula',
-    name: 'Synthwave Nebula',
-    tagline: 'Cosmic Violet & Magenta Laser',
+    id: 'cyber-obsidian',
+    name: 'Cyber Obsidian',
+    tagline: 'Cyberpunk Dark & Neon Green',
     category: 'dark',
-    icon: 'Sparkles',
+    icon: 'Zap',
     colors: {
-      bg: '#090614',
-      surface: '#110d24',
-      accent: '#f43f5e',
-      cyan: '#c084fc',
-      text: '#faf5ff'
+      bg: '#07090e',
+      surface: '#0d121d',
+      accent: '#00ff88',
+      cyan: '#06b6d4',
+      navbar: '#0d121d',
+      text: '#f8fafc'
     },
-    description: 'Deep cosmic amethyst space with neon laser lines and synthwave industrial aesthetics.'
-  },
-  {
-    id: 'cleanroom-light',
-    name: 'Cleanroom Studio',
-    tagline: 'Precision Daylight & Slate',
-    category: 'light',
-    icon: 'Sun',
-    colors: {
-      bg: '#f8fafc',
-      surface: '#ffffff',
-      accent: '#0284c7',
-      cyan: '#0d9488',
-      text: '#0f172a'
-    },
-    description: 'Crisp, high-readability daylight laboratory mode with clean slate panels and vivid cobalt wiring.'
+    description: 'High-contrast dark obsidian with glowing neon emerald conductors and cyan telemetry.'
   }
 ];
 
@@ -114,7 +104,7 @@ export const PATTERNS = [
   { id: 'dots', name: 'Circuit Matrix', desc: 'Digital dot pattern' },
   { id: 'blueprint', name: 'Blueprint Cross', desc: 'Dual-axis millimeter drafting grid' },
   { id: 'mesh', name: 'Industrial Mesh', desc: 'SCADA panel woven mesh' },
-  { id: 'clean', name: 'Minimal Glow', desc: 'Pure ambient gradient without grid' }
+  { id: 'clean', name: 'Pure Clean', desc: 'Pure solid workspace without grid' }
 ];
 
 const ThemeContext = createContext(null);
@@ -123,14 +113,20 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     try {
       const saved = localStorage.getItem('plc_theme');
-      // If user specifically requested white background with brown navbar, switch to white-brown
-      if (!saved || saved === 'cyber-obsidian') {
-        localStorage.setItem('plc_theme', 'white-brown');
-        return 'white-brown';
+      // Automatically migrate legacy or brown themes to professional black-and-white
+      if (!saved || saved === 'white-brown' || saved === 'cyber-obsidian' || saved === 'cleanroom-light' || saved === 'synthwave-nebula') {
+        localStorage.setItem('plc_theme', 'pro-monochrome-dark');
+        return 'pro-monochrome-dark';
+      }
+      // If valid theme exists in THEMES list, keep it; otherwise default to pro-monochrome-dark
+      const found = THEMES.some(t => t.id === saved);
+      if (!found) {
+        localStorage.setItem('plc_theme', 'pro-monochrome-dark');
+        return 'pro-monochrome-dark';
       }
       return saved;
     } catch {
-      return 'white-brown';
+      return 'pro-monochrome-dark';
     }
   });
 
@@ -145,9 +141,9 @@ export const ThemeProvider = ({ children }) => {
   const [glowEnabled, setGlowEnabled] = useState(() => {
     try {
       const saved = localStorage.getItem('plc_bg_glow');
-      return saved !== null ? saved === 'true' : true;
+      return saved !== null ? saved === 'true' : false;
     } catch {
-      return true;
+      return false;
     }
   });
 
