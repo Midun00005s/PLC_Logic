@@ -1503,9 +1503,330 @@
           ]
         }
       ]
+    },
+    {
+      "id": "prob-1791803964635",
+      "title": "New Industrial Automation Challenge",
+      "difficulty": "Easy",
+      "category": "Process Automation",
+      "tag": "Factory Automation",
+      "description": "### Industrial Problem Statement\nDescribe the operational requirements and safety constraints for this automation process.\n\n### Requirements:\n1. When **START PUSHBUTTON** (`X0`) is pressed, Actuator (`Y0`) turns **ON**.\n2. When **START** (`X0`) is released, Actuator (`Y0`) remains **ON** via seal-in logic.\n3. When **STOP PUSHBUTTON** (`X1`) is pressed, Actuator (`Y0`) turns **OFF**.\n\n### Standard Architecture Hint:\n- Rung 0: Branch with `[NO X0]` in parallel with `[NO Y0]`, followed by series `[NC X1]`, terminating in `[COIL Y0]`.",
+      "inputs": [
+        {
+          "address": "X0",
+          "name": "START_PB",
+          "description": "Start Pushbutton (NO momentary)",
+          "type": "momentary"
+        },
+        {
+          "address": "X1",
+          "name": "STOP_PB",
+          "description": "Stop Pushbutton (NC stop)",
+          "type": "momentary"
+        }
+      ],
+      "outputs": [
+        {
+          "address": "Y0",
+          "name": "MAIN_ACTUATOR",
+          "description": "Main Contactor / Drive",
+          "color": "#10b981"
+        }
+      ],
+      "starterLadder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Actuator Start/Stop with Auxiliary Contact Seal-In",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NO",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          }
+        ]
+      },
+      "publicTests": [
+        {
+          "name": "Test 1: Start Button Activates & Seals In",
+          "steps": [
+            {
+              "step": 1,
+              "description": "Press Start PB",
+              "inputs": {
+                "X0": true,
+                "X1": false
+              },
+              "expected": {
+                "Y0": true
+              }
+            },
+            {
+              "step": 2,
+              "description": "Release Start PB (Seal-in check)",
+              "inputs": {
+                "X0": false,
+                "X1": false
+              },
+              "expected": {
+                "Y0": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test 2: Stop Button Deactivates Output",
+          "steps": [
+            {
+              "step": 1,
+              "description": "Start actuator",
+              "inputs": {
+                "X0": true,
+                "X1": false
+              },
+              "expected": {
+                "Y0": true
+              }
+            },
+            {
+              "step": 2,
+              "description": "Press Stop PB",
+              "inputs": {
+                "X0": false,
+                "X1": true
+              },
+              "expected": {
+                "Y0": false
+              }
+            },
+            {
+              "step": 3,
+              "description": "Release Stop PB",
+              "inputs": {
+                "X0": false,
+                "X1": false
+              },
+              "expected": {
+                "Y0": false
+              }
+            }
+          ]
+        }
+      ],
+      "hiddenTests": [
+        {
+          "name": "Hidden 1: Safety Stop Priority (Both Pressed)",
+          "steps": [
+            {
+              "step": 1,
+              "description": "Simultaneous Start and Stop pressed together",
+              "inputs": {
+                "X0": true,
+                "X1": true
+              },
+              "expected": {
+                "Y0": false
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "submissions": [
+    {
+      "id": "sub-1791805693369-fs1tp",
+      "submittedAt": "2026-10-12T11:48:13.370Z",
+      "problemId": "prob-02",
+      "problemTitle": "Conveyor Belt Part Sorter & Batch Counter",
+      "userId": "usr-1790829485729-kfc2",
+      "userName": "Nivish",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Conveyor Run Logic",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0"
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "Part Counter (Preset 5)",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X1"
+              },
+              {
+                "type": "CTU",
+                "address": "C0",
+                "preset": 5
+              }
+            ]
+          },
+          {
+            "id": "rung-3",
+            "comment": "Batch Complete Divert & Buzzer",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "C0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          },
+          {
+            "id": "rung-4",
+            "comment": "Warning Buzzer on Complete",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "C0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2"
+              }
+            ]
+          },
+          {
+            "id": "rung-5",
+            "comment": "Counter Reset",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X2"
+              },
+              {
+                "type": "RESET",
+                "address": "C0"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 2,
+      "totalTests": 3,
+      "scorePercent": 67,
+      "isAccepted": false,
+      "publicPassed": 2,
+      "publicTotal": 2,
+      "hiddenPassed": 0,
+      "hiddenTotal": 1
+    },
+    {
+      "id": "sub-1791804026118-b5d46",
+      "submittedAt": "2026-10-12T11:20:26.118Z",
+      "problemId": "prob-03",
+      "problemTitle": "Dual Tank Fill Level Control (Hysteresis)",
+      "userId": "usr-admin-1",
+      "userName": "Admin",
+      "ladder": {
+        "rungs": [
+          {
+            "id": "rung-1",
+            "comment": "Pump Seal-in: Starts on low-low, stays on until High-level opens NC X1",
+            "elements": [
+              {
+                "type": "BRANCH",
+                "branches": [
+                  [
+                    {
+                      "type": "NC",
+                      "address": "X0"
+                    }
+                  ],
+                  [
+                    {
+                      "type": "NO",
+                      "address": "Y0"
+                    }
+                  ]
+                ]
+              },
+              {
+                "type": "NC",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y0",
+                "tag": ""
+              }
+            ]
+          },
+          {
+            "id": "rung-2",
+            "comment": "High Level Full Indicator",
+            "elements": [
+              {
+                "type": "NO",
+                "address": "X1"
+              },
+              {
+                "type": "COIL",
+                "address": "Y1"
+              }
+            ]
+          },
+          {
+            "id": "rung-3",
+            "comment": "Low Level Alarm",
+            "elements": [
+              {
+                "type": "NC",
+                "address": "X0"
+              },
+              {
+                "type": "COIL",
+                "address": "Y2"
+              }
+            ]
+          }
+        ]
+      },
+      "passedTests": 4,
+      "totalTests": 4,
+      "scorePercent": 100,
+      "isAccepted": true,
+      "publicPassed": 3,
+      "publicTotal": 3,
+      "hiddenPassed": 1,
+      "hiddenTotal": 1
+    },
     {
       "id": "sub-1791787518819-g36oj",
       "submittedAt": "2026-10-12T06:45:18.820Z",
